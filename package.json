@@ -9,13 +9,22 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "next": "16.1.1",
+    "@types/jszip": "^3.4.0",
+    "clsx": "^2.1.1",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.562.0",
+    "next": "^15.5.9",
+    "pica": "^9.0.1",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "react-toastify": "^11.0.5",
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.9"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pica": "^9.0.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
