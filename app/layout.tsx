@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
+import { cookies } from 'next/headers';
 import './globals.css';
 import 'react-toastify/dist/ReactToastify.css';
-import { LanguageProvider } from '@/src/contexts/LanguageContext';
+import { LanguageProvider, type Language } from '@/src/contexts/LanguageContext';
 import { ToastContainer } from 'react-toastify';
 
 const geistSans = Geist({
@@ -30,15 +31,25 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+const SUPPORTED_LANGUAGES = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko'];
+
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // 從伺服器端讀取 Cookie 中的語言偏好
+  const cookieStore = await cookies();
+  const savedLanguage = cookieStore.get('app-language')?.value;
+  const initialLanguage: Language = 
+    savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)
+      ? (savedLanguage as Language)
+      : 'en';
+
   return (
-    <html lang="zh-TW">
+    <html lang={initialLanguage === 'zh-TW' ? 'zh-TW' : initialLanguage === 'zh-CN' ? 'zh-CN' : initialLanguage}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <LanguageProvider>
+        <LanguageProvider initialLanguage={initialLanguage}>
           {children}
           <ToastContainer
             position="top-right"

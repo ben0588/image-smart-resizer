@@ -1,6 +1,7 @@
 /**
  * Language Context - 多語系管理
  * 支援語言：English, 繁體中文, 簡體中文, 日本語, 한국어
+ * 使用 Cookie 儲存語言偏好，支援 SSR
  */
 
 'use client';
@@ -16,22 +17,29 @@ interface LanguageContextValue {
 
 const LanguageContext = createContext<LanguageContextValue | undefined>(undefined);
 
-export function LanguageProvider({ children }: { children: React.ReactNode }) {
-  // 載入儲存的語言設定
-  const [language, setLanguageState] = useState<Language>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('app-language') as Language;
-      if (saved && ['en', 'zh-TW', 'zh-CN', 'ja', 'ko'].includes(saved)) {
-        return saved;
-      }
-    }
-    return 'en';
-  });
+const COOKIE_NAME = 'app-language';
 
-  // 切換語言並儲存
+// 設定 Cookie
+function setLanguageCookie(lang: Language) {
+  if (typeof document === 'undefined') return;
+  
+  const maxAge = 60 * 60 * 24 * 365; // 1 年
+  document.cookie = `${COOKIE_NAME}=${lang}; path=/; max-age=${maxAge}; samesite=lax`;
+}
+
+interface LanguageProviderProps {
+  children: React.ReactNode;
+  initialLanguage?: Language; // 從伺服器端傳入的初始語言
+}
+
+export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageProviderProps) {
+  // 使用從伺服器端傳入的初始語言，確保 SSR 和客戶端一致
+  const [language, setLanguageState] = useState<Language>(initialLanguage);
+
+  // 切換語言並儲存到 Cookie
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
-    localStorage.setItem('app-language', lang);
+    setLanguageCookie(lang);
   };
 
   return (
