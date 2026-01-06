@@ -83,8 +83,10 @@ export default function   ControlPanel({
             <div className="relative">
               <input
                 type="number"
-                value={config.width}
-                onChange={(e) => onConfigChange({ width: Number(e.target.value) })}
+                min="1"
+                value={config.width || ''}
+                onChange={(e) => onConfigChange({ width: e.target.value === '' ? 0 : Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 className="w-full pl-3 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 tabular-nums focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white outline-none transition-all"
               />
               <span className="absolute right-3 top-2.5 text-xs text-slate-400 pointer-events-none">
@@ -118,8 +120,10 @@ export default function   ControlPanel({
             <div className="relative">
               <input
                 type="number"
-                value={config.height}
-                onChange={(e) => onConfigChange({ height: Number(e.target.value) })}
+                min="1"
+                value={config.height || ''}
+                onChange={(e) => onConfigChange({ height: e.target.value === '' ? 0 : Number(e.target.value) })}
+                onFocus={(e) => e.target.select()}
                 className="w-full pl-3 pr-8 py-2.5 bg-slate-50 border border-slate-200 rounded-lg text-sm font-mono text-slate-800 tabular-nums focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 focus:bg-white outline-none transition-all"
               />
               <span className="absolute right-3 top-2.5 text-xs text-slate-400 pointer-events-none">
@@ -218,7 +222,7 @@ export default function   ControlPanel({
       <div className="mt-8 pt-6 border-t border-slate-100">
         <button
           onClick={handleDownload}
-          disabled={isProcessing}
+          disabled={isProcessing || !config.width || !config.height}
           className="w-full py-3.5 bg-indigo-600 hover:bg-indigo-700 active:scale-[0.98] text-white rounded-xl shadow-lg shadow-indigo-500/30 flex items-center justify-center gap-2 font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
         >
           {isProcessing ? (

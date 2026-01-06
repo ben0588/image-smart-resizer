@@ -1,7 +1,7 @@
 import { MetadataRoute } from 'next'
  
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://your-domain.com' // 請替換成你的實際網域
+  const baseUrl = 'https://image-smart-resizer.vercel.app' 
 
   return [
     {

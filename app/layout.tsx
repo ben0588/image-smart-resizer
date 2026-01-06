@@ -65,13 +65,13 @@ export async function generateMetadata(): Promise<Metadata> {
     openGraph: {
       title: `${t.title} - ${t.subtitle}`,
       description: t.seo.description,
-      url: 'https://your-domain.com',
+      url: 'https://image-smart-resizer.vercel.app',
       siteName: t.title,
       locale: lang.replace('-', '_'),
       type: 'website',
       images: [
         {
-          url: 'https://your-domain.com/og-image.jpg',
+          url: 'https://image-smart-resizer.vercel.app/1200x630.png',
           width: 1200,
           height: 630,
           alt: t.title,
@@ -84,7 +84,7 @@ export async function generateMetadata(): Promise<Metadata> {
       card: 'summary_large_image',
       title: t.title,
       description: t.seo.description,
-      images: ['https://your-domain.com/og-image.jpg'],
+      images: ['https://image-smart-resizer.vercel.app/1200x630.png'],
     },
 
     // 圖示
