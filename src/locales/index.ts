@@ -9,7 +9,6 @@ import { zhCN } from './zh-CN';
 import { ja } from './ja';
 import { ko } from './ko';
 import type { Language } from '@/src/contexts/LanguageContext';
-import type { TranslationKeys } from './en';
 
 export const translations = {
   en,

@@ -81,8 +81,13 @@ export const zhTW: Translation = {
   </section>
 
   <section>
-    <h4 class="text-lg font-bold text-slate-900 mb-2">2. 託管服務與網路連線</h4>
-    <p>本工具的程式碼託管於 Vercel 平台。過程中可能會收集標準的伺服器存取紀錄（如 IP 位址），用於維護連線穩定，並不包含您的圖片數據。</p>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">2. 託管服務與分析工具</h4>
+    <p>本工具的程式碼託管於 Vercel 平台。為了優化使用者體驗，我們使用了 <strong>Vercel Analytics</strong> 進行效能追蹤與流量分析：</p>
+    <ul class="list-disc pl-5 mt-2 space-y-1">
+      <li><strong>匿名分析</strong>：收集匿名化的技術資訊（如瀏覽器類型、裝置類型、載入時間），不包含任何個人身分資料（PII）。</li>
+      <li><strong>無圖片存取</strong>：分析工具僅追蹤網站使用行為，完全無法存取您處理的圖片內容。</li>
+      <li><strong>服務穩定性</strong>：標準的伺服器存取紀錄僅用於維護連線穩定。</li>
+    </ul>
   </section>
 
   <section>
@@ -91,8 +96,13 @@ export const zhTW: Translation = {
   </section>
 
   <section>
-    <h4 class="text-lg font-bold text-slate-900 mb-2">4. Cookie 與追蹤技術</h4>
-    <p>我們僅使用必要的本地儲存技術來紀錄您的介面偏好（如語系設定），不會用於廣告追蹤。</p>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">4. Cookie 與分析技術</h4>
+    <p>我們使用必要技術來提升服務品質：</p>
+    <ul class="list-disc pl-5 mt-2 space-y-1">
+      <li><strong>偏好設定</strong>：使用必要的本地儲存來紀錄您的介面偏好（如語系設定）。</li>
+      <li><strong>匿名統計</strong>：透過 Vercel Analytics 進行匿名網站統計，提升產品效能。</li>
+      <li><strong>非廣告用途</strong>：我們不使用任何第三方廣告追蹤 Cookie。</li>
+    </ul>
   </section>
 
   <section>

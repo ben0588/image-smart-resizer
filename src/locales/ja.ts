@@ -64,7 +64,53 @@ export const ja: Translation = {
     copyright: '© 2026 Smart Resizer. クリエイターのために設計',
     privacyPolicy: 'プライバシーポリシー',
     createdBy: '作成者:',
-    privacyText: 'すべての画像処理はブラウザ内でローカルに行われます。データがサーバーにアップロードされることはありません。',
+    privacyText: `
+<div class="space-y-6 text-slate-600">
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">核心的な約束：データ収集ゼロ</h4>
+    <p><strong>スマート画像リサイザー</strong>をご利用いただきありがとうございます。本ツールは<strong>「ローカルファースト」</strong>の設計思想に基づいています。プライバシーを重視しており、入力されたコンテンツをクラウドサーバーにアップロードすることはありません。</p>
+  </section>
+
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">1. データ処理と保存方法</h4>
+    <ul class="list-disc pl-5 space-y-2">
+      <li><strong>デバイスに保存</strong>：本ツールで発生するすべてのデータは、ブラウザのローカル（LocalStorage、IndexedDB、またはキャッシュ）に完全に保存されます。</li>
+      <li><strong>アクセス不可の声明</strong>：開発チームはお客様のデータにアクセス、表示、編集することはできません。</li>
+      <li><strong>ローカル実行</strong>：すべての演算ロジックはブラウザ内で実行されます。オフラインでも主要機能は動作します。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">2. ホスティングと分析ツール</h4>
+    <p>本ツールのコードはVercelプラットフォームでホストされています。ユーザー体験の向上のため、<strong>Vercel Analytics</strong>を使用してパフォーマンス追跡とトラフィック分析を行っています：</p>
+    <ul class="list-disc pl-5 mt-2 space-y-1">
+      <li><strong>匿名分析</strong>：ブラウザの種類、デバイス、読み込み時間などの匿名化された技術情報を収集しますが、個人を特定できる情報（PII）は含まれません。</li>
+      <li><strong>画像へのアクセスなし</strong>：分析ツールは利用統計のみを追跡し、処理された画像内容にアクセスすることはありません。</li>
+      <li><strong>サービスの安定性</strong>：標準的なサーバーアクセスログは、接続の安定性維持のためにのみ使用されます。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">3. データの安全性とリスク</h4>
+    <p>データはブラウザ内にのみ保存されるため、キャッシュの削除やシークレットモードの使用により失われる可能性があります。一方で、クラウドからのデータ流出リスクは完全に排除されています。</p>
+  </section>
+
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">4. クッキーと分析技術</h4>
+    <p>サービスの質を向上のため、必要な技術を使用しています：</p>
+    <ul class="list-disc pl-5 mt-2 space-y-1">
+      <li><strong>設定の保存</strong>：言語設定などのインターフェース設定を記録するために必要なローカルストレージを使用します。</li>
+      <li><strong>匿名統計</strong>：Vercel Analyticsによる匿名のサイト統計を通じて製品のパフォーマンスを改善します。</li>
+      <li><strong>広告目的の外</strong>：サードパーティの広告追跡クッキーは一切使用していません。</li>
+    </ul>
+  </section>
+
+  <section>
+    <h4 class="text-lg font-bold text-slate-900 mb-2">5. お問い合わせ</h4>
+    <p>仕組みや安全性についてご不明な点がございましたら、こちらまでお問い合わせください：<br/><strong>メール：energy9527z@gmail.com</strong></p>
+  </section>
+</div>
+    `,
   },
 
   // SEO
