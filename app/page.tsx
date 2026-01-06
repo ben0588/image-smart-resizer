@@ -6,8 +6,8 @@
 
 'use client';
 
-import React from 'react';
-import { Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { Layers, ShieldCheck, Github } from 'lucide-react';
 import { toast } from 'react-toastify';
 import useAppStore from '@/src/store/use-app-store';
 import { downloadImage, downloadBatchAsZip } from '@/src/lib/engine/processor';
@@ -18,9 +18,11 @@ import ControlPanel from '@/src/components/feature/ControlPanel';
 import ImagePreview from '@/src/components/feature/ImagePreview';
 import { BatchPreview } from '@/src/components/feature/BatchPreview';
 import { LanguageSelector } from '@/src/components/feature/LanguageSelector';
+import { Modal } from '@/src/components/ui/Modal';
 
 export default function SmartResizer() {
   const { t } = useTranslation();
+  const [isPrivacyOpen, setIsPrivacyOpen] = useState(false);
 
   // Zustand Store
   const {
@@ -183,9 +185,61 @@ export default function SmartResizer() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-12 text-center text-slate-400 text-sm">
-          <p>{t.footer.copyright}</p>
+        <footer className="mt-12 py-8 border-t border-slate-100">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-sm">
+            <p className="font-medium">{t.footer.copyright}</p>
+            
+            <div className="flex items-center gap-6">
+              <button 
+                onClick={() => setIsPrivacyOpen(true)}
+                className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                <span>{t.footer.privacyPolicy}</span>
+              </button>
+              
+              <div className="flex items-center gap-1.5 grayscale hover:grayscale-0 transition-all">
+                <span>{t.footer.createdBy}</span>
+                <a 
+                  href="https://github.com/ben0588" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 font-bold text-slate-600 hover:text-black no-underline"
+                >
+                  <Github className="w-4 h-4" />
+                  GitHub
+                </a>
+              </div>
+            </div>
+          </div>
         </footer>
+
+        {/* Privacy Policy Modal */}
+        <Modal 
+          isOpen={isPrivacyOpen} 
+          onClose={() => setIsPrivacyOpen(false)}
+          title={t.footer.privacyPolicy}
+        >
+          <div className="p-8">
+            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+              <ShieldCheck className="w-8 h-8" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-900 text-center mb-4">
+              {t.footer.privacyPolicy}
+            </h3>
+            <p className="text-slate-600 leading-relaxed text-center">
+              {t.footer.privacyText}
+            </p>
+            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+              <button 
+                onClick={() => setIsPrivacyOpen(false)}
+                className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </Modal>
       </div>
     </div>
   );

@@ -1,3 +1,4 @@
+
 import type { Metadata } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
@@ -5,6 +6,7 @@ import './globals.css';
 import 'react-toastify/dist/ReactToastify.css';
 import { LanguageProvider, type Language } from '@/src/contexts/LanguageContext';
 import { ToastContainer } from 'react-toastify';
+import { Analytics } from "@vercel/analytics/react"
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -21,7 +23,7 @@ export const metadata: Metadata = {
   description: '高品質圖片縮放與格式轉換工具，所有處理皆在客戶端執行，保護您的隱私',
   icons: {
     icon: [
-      { url: '/icon.svg', type: 'image/svg+xml' },
+      // { url: '/icon.svg', type: 'image/svg+xml' },
       { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
       { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
     ],
@@ -63,6 +65,8 @@ export default async function RootLayout({
             pauseOnHover
             theme="light"
           />
+          {/* Vercel 分析流量 */}
+          <Analytics />
         </LanguageProvider>
       </body>
     </html>

@@ -9,7 +9,7 @@
 /**
  * 支援的圖片輸出格式 (MIME Type)
  */
-export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp';
+export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/x-icon';
 
 /**
  * 圖片處理核心設定

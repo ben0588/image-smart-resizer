@@ -22,7 +22,7 @@ import { formatToShortName } from '@/src/lib/utils';
 import { useResizeHistory } from '@/src/hooks/useLocalStorage';
 import { useTranslation } from '@/src/hooks/useTranslation';
 
-export default function ControlPanel({
+export default function   ControlPanel({
   config,
   isProcessing,
   error,
@@ -33,7 +33,12 @@ export default function ControlPanel({
   const { t } = useTranslation();
   const { history, addHistory, removeHistory } = useResizeHistory();
 
-  const formats: ImageFormat[] = ['image/jpeg', 'image/png', 'image/webp'];
+  const formats: ImageFormat[] = [
+    'image/jpeg',
+    'image/png',
+    'image/webp',
+    'image/x-icon',
+  ];
 
   // 處理下載並記錄歷史
   const handleDownload = () => {
@@ -166,7 +171,7 @@ export default function ControlPanel({
           <label className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3 block">
             {t.controls.format}
           </label>
-          <div className="grid grid-cols-3 bg-slate-100 p-1 rounded-lg gap-1">
+          <div className="grid grid-cols-4 bg-slate-100 p-1 rounded-lg gap-1">
             {formats.map((fmt) => (
               <button
                 key={fmt}

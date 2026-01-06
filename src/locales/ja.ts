@@ -15,7 +15,7 @@ export const ja: Translation = {
     dragDrop: 'ここに画像をドラッグ＆ドロップ',
     or: 'または',
     browse: 'ファイルを選択',
-    formats: '対応形式：JPG、PNG、WebP',
+    formats: '対応形式：JPG、PNG、WebP、ICO',
     multipleSupport: '（単一または複数のファイルに対応）',
     localProcessing: 'ローカル処理、画像はサーバーにアップロードされません',
     addMore: 'さらに追加',
@@ -61,7 +61,10 @@ export const ja: Translation = {
 
   // Footer
   footer: {
-    copyright: '© 2025 Smart Resizer. クリエイターのために設計',
+    copyright: '© 2026 Smart Resizer. クリエイターのために設計',
+    privacyPolicy: 'プライバシーポリシー',
+    createdBy: '作成者:',
+    privacyText: 'すべての画像処理はブラウザ内でローカルに行われます。データがサーバーにアップロードされることはありません。',
   },
 
   // Errors

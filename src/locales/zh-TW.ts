@@ -15,7 +15,7 @@ export const zhTW: Translation = {
     dragDrop: '拖放圖片至此',
     or: '或',
     browse: '瀏覽檔案',
-    formats: '支援格式：JPG、PNG、WebP',
+    formats: '支援格式：JPG、PNG、WebP、ICO',
     multipleSupport: '（支援單個或多個檔案）',
     localProcessing: '本地處理，圖片不會上傳到伺服器',
     addMore: '加入更多',
@@ -61,7 +61,10 @@ export const zhTW: Translation = {
 
   // Footer
   footer: {
-    copyright: '© 2025 Smart Resizer. 為創作者設計',
+    copyright: '© 2026 Smart Resizer. 為創作者設計',
+    privacyPolicy: '隱私權政策',
+    createdBy: '作者：',
+    privacyText: '所有圖片處理均在瀏覽器本地完成，您的資料不會上傳到任何伺服器。',
   },
 
   // Errors

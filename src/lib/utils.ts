@@ -83,6 +83,7 @@ export function replaceExtension(
     'image/jpeg': 'jpg',
     'image/png': 'png',
     'image/webp': 'webp',
+    'image/x-icon': 'ico',
   };
   
   // 如果有尺寸資訊，加入檔名
@@ -98,6 +99,7 @@ export function formatToShortName(format: ImageFormat): string {
     'image/jpeg': 'JPG',
     'image/png': 'PNG',
     'image/webp': 'WebP',
+    'image/x-icon': 'ICO',
   };
   return map[format];
 }

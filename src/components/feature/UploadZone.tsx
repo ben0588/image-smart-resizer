@@ -71,7 +71,7 @@ export default function UploadZone({ onFileSelect }: UploadZoneProps) {
       <input
         ref={fileInputRef}
         type="file"
-        accept="image/jpeg,image/png,image/webp,image/svg+xml"
+        accept="image/jpeg,image/png,image/webp,image/svg+xml,image/x-icon"
         multiple
         onChange={handleFileChange}
         className="hidden"
@@ -113,6 +113,9 @@ export default function UploadZone({ onFileSelect }: UploadZoneProps) {
           </span>
           <span className="bg-white px-2 py-1 rounded border border-slate-200">
             WebP
+          </span>
+          <span className="bg-white px-2 py-1 rounded border border-slate-200">
+            ICO
           </span>
         </div>
       </div>

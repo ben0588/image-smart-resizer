@@ -15,7 +15,7 @@ export const ko: Translation = {
     dragDrop: '여기에 이미지를 드래그하세요',
     or: '또는',
     browse: '파일 선택',
-    formats: '지원 형식: JPG, PNG, WebP',
+    formats: '지원 형식: JPG, PNG, WebP, ICO',
     multipleSupport: '(단일 또는 여러 파일 지원)',
     localProcessing: '로컬 처리, 이미지가 서버에 업로드되지 않습니다',
     addMore: '더 추가',
@@ -61,7 +61,10 @@ export const ko: Translation = {
 
   // Footer
   footer: {
-    copyright: '© 2025 Smart Resizer. 크리에이터를 위해 설계',
+    copyright: '© 2026 Smart Resizer. 크리에이터를 위해 설계',
+    privacyPolicy: '개인정보 처리방침',
+    createdBy: '제작자:',
+    privacyText: '모든 이미지 처리는 브라우저에서 로컬로 수행됩니다. 데이터는 서버로 업로드되지 않습니다。',
   },
 
   // Errors

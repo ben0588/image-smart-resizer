@@ -13,7 +13,7 @@ export const en = {
     dragDrop: 'Drag and drop image here',
     or: 'or',
     browse: 'Browse Files',
-    formats: 'Supported formats: JPG, PNG, WebP',
+    formats: 'Supported formats: JPG, PNG, WebP, ICO',
     multipleSupport: '(Supports single or multiple files)',
     localProcessing: 'Local processing, images are not uploaded to server',
     addMore: 'Add more',
@@ -59,7 +59,10 @@ export const en = {
 
   // Footer
   footer: {
-    copyright: '© 2025 Smart Resizer. Designed for creators',
+    copyright: '© 2026 Smart Resizer. Designed for creators',
+    privacyPolicy: 'Privacy Policy',
+    createdBy: 'Created by',
+    privacyText: 'All images are processed locally in your browser. No data is uploaded to any server.',
   },
 
   // Errors

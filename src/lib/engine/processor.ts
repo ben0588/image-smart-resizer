@@ -65,11 +65,17 @@ export async function resizeImage(
         });
 
         // 轉換為指定格式 (quality 已是 0-1 範圍)
-        const blob = await pica.toBlob(
+        // 如果是 ICO，先轉為 PNG 再封裝
+        const outputFormat = format === 'image/x-icon' ? 'image/png' : format;
+        let blob = await pica.toBlob(
           targetCanvas,
-          format,
+          outputFormat,
           quality
         );
+
+        if (format === 'image/x-icon') {
+          blob = await convertPngToIco(blob, width, height);
+        }
         
         resolve(blob);
       } catch (error) {
@@ -275,6 +281,44 @@ export function downloadImage(blob: Blob, filename: string): void {
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
   }, 150);
+}
+
+/**
+ * 將 PNG Blob 封裝為單一圖片的 ICO 格式
+ */
+async function convertPngToIco(
+  pngBlob: Blob,
+  width: number,
+  height: number
+): Promise<Blob> {
+  const buffer = await pngBlob.arrayBuffer();
+  const pngData = new Uint8Array(buffer);
+  
+  // ICO 檔案標頭 (6 byte) + 目錄項 (16 byte)
+  const icoHeaderSize = 22;
+  const icoDataBuffer = new ArrayBuffer(icoHeaderSize + pngData.length);
+  const view = new DataView(icoDataBuffer);
+  
+  // --- ICO Header ---
+  view.setUint16(0, 0, true);     // Reserved
+  view.setUint16(2, 1, true);     // Type (1 for ICO)
+  view.setUint16(4, 1, true);     // Count (1 image)
+  
+  // --- Directory Entry ---
+  view.setUint8(6, width >= 256 ? 0 : width);   // Width
+  view.setUint8(7, height >= 256 ? 0 : height); // Height
+  view.setUint8(8, 0);            // Color count
+  view.setUint8(9, 0);            // Reserved
+  view.setUint16(10, 1, true);    // Planes
+  view.setUint16(12, 32, true);   // Bits per pixel
+  view.setUint32(14, pngData.length, true); // Data size
+  view.setUint32(18, icoHeaderSize, true);  // Data offset
+
+  // --- Copy PNG Data ---
+  const fullIcoData = new Uint8Array(icoDataBuffer);
+  fullIcoData.set(pngData, icoHeaderSize);
+  
+  return new Blob([icoDataBuffer], { type: 'image/x-icon' });
 }
 
 /**
