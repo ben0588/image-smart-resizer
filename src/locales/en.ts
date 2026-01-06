@@ -65,6 +65,12 @@ export const en = {
     privacyText: 'All images are processed locally in your browser. No data is uploaded to any server.',
   },
 
+  // SEO
+  seo: {
+    description: "An efficient, clean, and privacy-focused smart image resizing tool that processes everything in the browser.",
+    features: "Image Resizing, Format Conversion, SVG to PNG, Privacy Protection"
+  },
+
   // Errors
   errors: {
     uploadFirst: 'Please upload an image first',

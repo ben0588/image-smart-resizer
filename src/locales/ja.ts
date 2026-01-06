@@ -67,6 +67,12 @@ export const ja: Translation = {
     privacyText: 'すべての画像処理はブラウザ内でローカルに行われます。データがサーバーにアップロードされることはありません。',
   },
 
+  // SEO
+  seo: {
+    description: "ブラウザ内で完結する、効率的でクリーン、そしてプライバシーを重視した画期的な画像リサイズツールです。",
+    features: "画像リサイズ, 形式変換, SVGからPNGへの変換, プライバシー保護"
+  },
+
   // Errors
   errors: {
     uploadFirst: '先に画像をアップロードしてください',

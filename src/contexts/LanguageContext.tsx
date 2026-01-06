@@ -7,6 +7,7 @@
 'use client';
 
 import React, { createContext, useContext, useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export type Language = 'en' | 'zh-TW' | 'zh-CN' | 'ja' | 'ko';
 
@@ -33,6 +34,7 @@ interface LanguageProviderProps {
 }
 
 export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageProviderProps) {
+  const router = useRouter();
   // 使用從伺服器端傳入的初始語言，確保 SSR 和客戶端一致
   const [language, setLanguageState] = useState<Language>(initialLanguage);
 
@@ -40,6 +42,8 @@ export function LanguageProvider({ children, initialLanguage = 'en' }: LanguageP
   const setLanguage = (lang: Language) => {
     setLanguageState(lang);
     setLanguageCookie(lang);
+    // 強制 Next.js 重新整理伺服器組件，以更新 Metadata (generateMetadata)
+    router.refresh();
   };
 
   return (

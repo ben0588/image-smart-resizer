@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css';
 import { LanguageProvider, type Language } from '@/src/contexts/LanguageContext';
 import { ToastContainer } from 'react-toastify';
 import { Analytics } from "@vercel/analytics/react"
+import JsonLd from '@/src/components/JsonLd';
+import { translations } from '@/src/locales';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -18,22 +20,81 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-export const metadata: Metadata = {
-  title: 'Image Smart Resizer - 智慧圖片調整工具',
-  description: '高品質圖片縮放與格式轉換工具，所有處理皆在客戶端執行，保護您的隱私',
-  icons: {
-    icon: [
-      // { url: '/icon.svg', type: 'image/svg+xml' },
-      { url: '/icon-48.png', sizes: '48x48', type: 'image/png' },
-      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
-    ],
-    apple: [
-      { url: '/icon-180.png', sizes: '180x180', type: 'image/png' },
-    ],
-  },
-};
-
 const SUPPORTED_LANGUAGES = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko'];
+
+export async function generateMetadata(): Promise<Metadata> {
+  // 從伺服器端讀取 Cookie 中的語言偏好
+  const cookieStore = await cookies();
+  const savedLanguage = cookieStore.get('app-language')?.value;
+  const lang: Language = 
+    savedLanguage && SUPPORTED_LANGUAGES.includes(savedLanguage)
+      ? (savedLanguage as Language)
+      : 'en';
+
+  const t = translations[lang];
+
+  return {
+    // 基礎設定
+    title: {
+      template: `%s | ${t.title}`,
+      default: `${t.title} - ${t.subtitle}`,
+    },
+    description: t.seo.description,
+    
+    // 關鍵字
+    keywords: t.seo.features.split(', '),
+
+    // 作者與版權
+    authors: [{ name: 'ben0588' }],
+    creator: 'ben0588',
+    
+    // 讓搜尋引擎正確索引
+    robots: {
+      index: true,
+      follow: true,
+      googleBot: {
+        index: true,
+        follow: true,
+        'max-video-preview': -1,
+        'max-image-preview': 'large',
+        'max-snippet': -1,
+      },
+    },
+
+    // Open Graph
+    openGraph: {
+      title: `${t.title} - ${t.subtitle}`,
+      description: t.seo.description,
+      url: 'https://your-domain.com',
+      siteName: t.title,
+      locale: lang.replace('-', '_'),
+      type: 'website',
+      images: [
+        {
+          url: 'https://your-domain.com/og-image.jpg',
+          width: 1200,
+          height: 630,
+          alt: t.title,
+        },
+      ],
+    },
+
+    // Twitter Card
+    twitter: {
+      card: 'summary_large_image',
+      title: t.title,
+      description: t.seo.description,
+      images: ['https://your-domain.com/og-image.jpg'],
+    },
+
+    // 圖示
+    icons: {
+      icon: '/favicon.ico',
+      shortcut: '/favicon-16x16.png',
+      apple: '/apple-touch-icon.png',
+    },
+  };
+}
 
 export default async function RootLayout({
   children,
@@ -52,6 +113,7 @@ export default async function RootLayout({
     <html lang={initialLanguage === 'zh-TW' ? 'zh-TW' : initialLanguage === 'zh-CN' ? 'zh-CN' : initialLanguage}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <LanguageProvider initialLanguage={initialLanguage}>
+          <JsonLd />
           {children}
           <ToastContainer
             position="top-right"

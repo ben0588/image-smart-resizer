@@ -67,6 +67,12 @@ export const ko: Translation = {
     privacyText: '모든 이미지 처리는 브라우저에서 로컬로 수행됩니다. 데이터는 서버로 업로드되지 않습니다。',
   },
 
+  // SEO
+  seo: {
+    description: "브라우저에서 모든 처리가 이루어지는 효율적이고 깨끗하며 개인정보 보호를 중시하는 스마트 이미지 크기 조정 도구입니다.",
+    features: "이미지 크기 조정, 형식 변환, SVG를 PNG로 변환, 개인정보 보호"
+  },
+
   // Errors
   errors: {
     uploadFirst: '먼저 이미지를 업로드하세요',

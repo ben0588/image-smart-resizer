@@ -220,20 +220,34 @@ export default function SmartResizer() {
           onClose={() => setIsPrivacyOpen(false)}
           title={t.footer.privacyPolicy}
         >
-          <div className="p-8">
-            <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-              <ShieldCheck className="w-8 h-8" />
+          <div className="flex flex-col max-h-[70vh]">
+            <div className="px-8  overflow-y-auto custom-scrollbar">
+              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
+                <ShieldCheck className="w-8 h-8" />
+              </div>
+              <h3 className="text-2xl font-bold text-slate-900 text-center mb-2">
+                {t.footer.privacyPolicy}
+              </h3>
+              <p className="text-xs text-slate-400 text-center mb-8 uppercase tracking-widest font-medium">
+                Effective Date: 2026-01-06
+              </p>
+              
+              <div className="prose prose-slate max-w-none">
+                <div 
+                  className="text-slate-600 leading-relaxed text-sm md:text-base"
+                  dangerouslySetInnerHTML={{ __html: t.footer.privacyText }}
+                />
+              </div>
+              
+              <div className="mt-8 pt-8 border-t border-slate-100 italic text-slate-400 text-xs text-center">
+                Questions? Contact us via GitHub or Email.
+              </div>
             </div>
-            <h3 className="text-xl font-bold text-slate-900 text-center mb-4">
-              {t.footer.privacyPolicy}
-            </h3>
-            <p className="text-slate-600 leading-relaxed text-center">
-              {t.footer.privacyText}
-            </p>
-            <div className="mt-8 pt-6 border-t border-slate-100 flex justify-center">
+            
+            <div className="py-4 bg-slate-50 border-t border-slate-100 flex justify-center">
               <button 
                 onClick={() => setIsPrivacyOpen(false)}
-                className="px-6 py-2 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-colors"
+                className="px-8 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
               >
                 Done
               </button>

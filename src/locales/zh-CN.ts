@@ -67,6 +67,12 @@ export const zhCN: Translation = {
     privacyText: '所有图片处理均在浏览器本地完成，您的数据不会上传到任何服务器。',
   },
 
+  // SEO
+  seo: {
+    description: "一個高效、纯净且重视隐私的图片智能调整工具，完全在浏览器端完成处理。",
+    features: "图片缩放, 格式转换, SVG转PNG, 隐私保护"
+  },
+
   // Errors
   errors: {
     uploadFirst: '请先上传图片',
