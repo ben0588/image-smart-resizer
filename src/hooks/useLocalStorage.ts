@@ -10,7 +10,7 @@ import { useState } from 'react';
 import type { HistoryItem } from '@/src/types';
 
 const STORAGE_KEY = 'smart-resizer-history';
-const MAX_HISTORY_ITEMS = 10;
+const MAX_HISTORY_ITEMS = 20;
 
 /**
  * 生成 UUID

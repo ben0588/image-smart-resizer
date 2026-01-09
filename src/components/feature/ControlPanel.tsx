@@ -139,7 +139,7 @@ export default function   ControlPanel({
             <span className="flex items-center gap-1 text-[10px] font-medium text-slate-400 py-1 uppercase">
               <Clock className="w-3 h-3" /> {t.controls.history}:
             </span>
-            {history.slice(0, 3).map((item) => (
+            {history.slice(0, 9).map((item) => (
               <div
                 key={item.id}
                 className="group flex items-center gap-1 text-xs px-2 py-1 bg-slate-100 text-slate-600 rounded hover:bg-slate-200 transition-colors"
