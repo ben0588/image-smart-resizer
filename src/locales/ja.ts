@@ -19,6 +19,7 @@ export const ja: Translation = {
     multipleSupport: '（単一または複数のファイルに対応）',
     localProcessing: 'ローカル処理、画像はサーバーにアップロードされません',
     addMore: 'さらに追加',
+    dropHere: 'ここにファイルをドロップして追加',
   },
 
   // Control Panel
@@ -38,6 +39,15 @@ export const ja: Translation = {
     applySize: 'このサイズを適用',
     deleteHistory: 'この履歴を削除',
     reset: 'リセット',
+    estimatedSize: '予想サイズ',
+    calculating: '計算中...',
+    reduction: '削減',
+    calculateAllSizes: 'すべてのサイズを試算',
+    downloadSingle: '画像をダウンロード',
+    downloadBatch: '一括ダウンロード',
+    downloadAndCompress: '圧縮してダウンロード',
+    approxTotal: '合計約',
+    pendingCalculation: '計算待ち',
   },
 
   // Image Preview
@@ -57,6 +67,14 @@ export const ja: Translation = {
     processing: '処理中',
     done: '完了',
     error: 'エラー',
+    clearAll: 'すべてクリア',
+    filename: 'ファイル名',
+    dimensions: 'サイズ',
+    format: '形式',
+    originalSize: '元のサイズ',
+    compressedSize: '圧縮後',
+    selected: '選択済み',
+    clickToEdit: 'クリックして設定を編集',
   },
 
   // Footer

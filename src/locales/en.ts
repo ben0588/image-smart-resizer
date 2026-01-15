@@ -17,6 +17,7 @@ export const en = {
     multipleSupport: '(Supports single or multiple files)',
     localProcessing: 'Local processing, images are not uploaded to server',
     addMore: 'Add more',
+    dropHere: 'Drop files here to add to list',
   },
 
   // Control Panel
@@ -36,6 +37,15 @@ export const en = {
     applySize: 'Apply this size',
     deleteHistory: 'Delete this history',
     reset: 'Reset',
+    estimatedSize: 'Estimated Size',
+    calculating: 'Calculating...',
+    reduction: 'reduction',
+    calculateAllSizes: 'Calculate All Sizes',
+    downloadSingle: 'Download Image',
+    downloadBatch: 'Download All',
+    downloadAndCompress: 'Compress & Download',
+    approxTotal: 'Total',
+    pendingCalculation: 'Pending',
   },
 
   // Image Preview
@@ -55,6 +65,14 @@ export const en = {
     processing: 'Processing',
     done: 'Done',
     error: 'Error',
+    clearAll: 'Clear All',
+    filename: 'Filename',
+    dimensions: 'Dimensions',
+    format: 'Format',
+    originalSize: 'Original',
+    compressedSize: 'Compressed',
+    selected: 'Selected',
+    clickToEdit: 'Click to edit settings',
   },
 
   // Footer

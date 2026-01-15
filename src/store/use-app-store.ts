@@ -21,10 +21,15 @@ const useAppStore = create<AppState>((set, get) => ({
 
   batchFiles: [],
   isBatchMode: false,
+  selectedFileId: null,
 
   isProcessing: false,
   resultBlob: null,
   resultPreviewUrl: null,
+
+  // 預估大小狀態
+  estimatedSize: null,
+  isEstimating: false,
 
   config: {
     width: 800,
@@ -89,6 +94,7 @@ const useAppStore = create<AppState>((set, get) => ({
   /**
    * 更新設定 (支援部分更新)
    * 若 maintainAspectRatio 為 true，自動計算對應尺寸
+   * 當設定變更時，重置批次檔案的處理狀態（允許重新下載）
    */
   updateConfig: (partial: Partial<AppState['config']>) => {
     const state = get();
@@ -105,7 +111,24 @@ const useAppStore = create<AppState>((set, get) => ({
       }
     }
 
-    set({ config: newConfig });
+    // 當設定變更時，重置批次檔案的處理狀態（讓使用者可以重新下載）
+    const resetBatchFiles = state.batchFiles.map((f) => ({
+      ...f,
+      status: 'pending' as const,
+      resultBlob: undefined,
+      resultVariants: undefined,
+      estimatedSize: undefined,
+      isEstimating: false,
+      error: undefined,
+    }));
+
+    set({ 
+      config: newConfig,
+      batchFiles: state.isBatchMode ? resetBatchFiles : state.batchFiles,
+      // 也清除單檔案模式的處理結果
+      resultBlob: null,
+      resultPreviewUrl: state.resultPreviewUrl ? (revokePreviewURL(state.resultPreviewUrl), null) : null,
+    });
   },
 
   /**
@@ -215,12 +238,36 @@ const useAppStore = create<AppState>((set, get) => ({
     }
 
     // 建立批次檔案項目
-    const newBatchFiles = files.map((file) => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      previewUrl: createPreviewURL(file),
-      status: 'pending' as const,
-    }));
+    const newBatchFiles = files.map((file) => {
+      const previewUrl = createPreviewURL(file);
+      const id = Math.random().toString(36).substr(2, 9);
+
+      // 異步讀取圖片尺寸
+      const img = new Image();
+      img.onload = () => {
+        set((state) => ({
+          batchFiles: state.batchFiles.map((f) =>
+            f.id === id
+              ? {
+                  ...f,
+                  originalDimensions: {
+                    width: img.naturalWidth,
+                    height: img.naturalHeight,
+                  },
+                }
+              : f
+          ),
+        }));
+      };
+      img.src = previewUrl;
+
+      return {
+        id,
+        file,
+        previewUrl,
+        status: 'pending' as const,
+      };
+    });
 
     set({
       batchFiles: [...state.batchFiles, ...newBatchFiles],
@@ -355,6 +402,156 @@ const useAppStore = create<AppState>((set, get) => ({
         isProcessing: false,
       });
     }
+  },
+
+  /**
+   * 預估壓縮後大小（使用 canvas.toBlob 快速預估）
+   * 此方法不觸發下載，僅用於顯示預估大小
+   */
+  estimateSize: async () => {
+    const state = get();
+    const { sourceFile, config, isBatchMode, batchFiles, selectedFileId } = state;
+
+    // 決定要預估的檔案
+    let targetFile: File | null = null;
+
+    if (isBatchMode) {
+      // 批次模式：預估選中的檔案，或第一個檔案
+      const targetId = selectedFileId || batchFiles[0]?.id;
+      const targetItem = batchFiles.find((f) => f.id === targetId);
+      targetFile = targetItem?.file || null;
+    } else {
+      // 單檔案模式
+      targetFile = sourceFile;
+    }
+
+    if (!targetFile) {
+      set({ estimatedSize: null, isEstimating: false });
+      return;
+    }
+
+    set({ isEstimating: true });
+
+    try {
+      // 使用 resizeImage 進行實際壓縮以取得精確大小
+      const blob = await resizeImage(targetFile, {
+        width: config.width,
+        height: config.height,
+        format: config.format,
+        quality: config.quality,
+      });
+
+      set({
+        estimatedSize: blob.size,
+        isEstimating: false,
+      });
+
+      // 如果是批次模式，也更新對應檔案的預估大小
+      if (isBatchMode && selectedFileId) {
+        set((state) => ({
+          batchFiles: state.batchFiles.map((f) =>
+            f.id === selectedFileId
+              ? { ...f, estimatedSize: blob.size, isEstimating: false }
+              : f
+          ),
+        }));
+      }
+    } catch (error) {
+      console.error('預估大小失敗:', error);
+      set({ estimatedSize: null, isEstimating: false });
+    }
+  },
+
+  /**
+   * 預估所有批次檔案的壓縮後大小
+   * 用於多圖模式的「試算所有大小」功能
+   */
+  estimateAllSizes: async () => {
+    const { batchFiles } = get();
+
+    if (batchFiles.length === 0) return;
+
+    // 先保存要處理的檔案 ID 列表（避免閉包問題）
+    const fileIds = batchFiles.map((f) => f.id);
+
+    // 標記所有檔案為計算中
+    set((state) => ({
+      batchFiles: state.batchFiles.map((f) => ({
+        ...f,
+        isEstimating: true,
+        estimatedSize: undefined,
+      })),
+    }));
+
+    // 逐一計算每個檔案的預估大小
+    for (const fileId of fileIds) {
+      // 每次迭代時重新取得最新狀態
+      const currentState = get();
+      const item = currentState.batchFiles.find((f) => f.id === fileId);
+      
+      // 如果檔案已被移除，跳過
+      if (!item) continue;
+
+      try {
+        const blob = await resizeImage(item.file, {
+          width: currentState.config.width,
+          height: currentState.config.height,
+          format: currentState.config.format,
+          quality: currentState.config.quality,
+        });
+
+        set((state) => ({
+          batchFiles: state.batchFiles.map((f) =>
+            f.id === fileId
+              ? { ...f, estimatedSize: blob.size, isEstimating: false }
+              : f
+          ),
+        }));
+      } catch (error) {
+        console.error(`預估檔案 ${item.file.name} 大小失敗:`, error);
+        set((state) => ({
+          batchFiles: state.batchFiles.map((f) =>
+            f.id === fileId
+              ? { ...f, estimatedSize: undefined, isEstimating: false }
+              : f
+          ),
+        }));
+      }
+    }
+  },
+
+  /**
+   * 選擇檔案（清單模式使用）
+   */
+  selectFile: (id: string | null) => {
+    const state = get();
+    
+    if (id === null) {
+      set({ selectedFileId: null });
+      return;
+    }
+
+    const targetItem = state.batchFiles.find((f) => f.id === id);
+    if (!targetItem) return;
+
+    // 讀取選中圖片的尺寸
+    const img = new Image();
+    img.onload = () => {
+      const aspectRatio = img.naturalWidth / img.naturalHeight;
+      
+      set({
+        selectedFileId: id,
+        config: {
+          ...state.config,
+          width: img.naturalWidth,
+          height: img.naturalHeight,
+          aspectRatio,
+        },
+      });
+    };
+    img.src = targetItem.previewUrl;
+
+    set({ selectedFileId: id });
   },
 }));
 

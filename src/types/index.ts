@@ -66,6 +66,25 @@ export interface BatchFileItem {
     url?: string;
   }>;
   error?: string;                   // 錯誤訊息
+  // 新增：原始圖片尺寸
+  originalDimensions?: {
+    width: number;
+    height: number;
+  };
+  // 新增：預估壓縮後大小
+  estimatedSize?: number;
+  // 新增：預估計算中
+  isEstimating?: boolean;
+}
+
+/**
+ * 預估大小資訊
+ */
+export interface EstimationInfo {
+  originalSize: number;             // 原始檔案大小 (bytes)
+  estimatedSize: number;            // 預估壓縮後大小 (bytes)
+  reduction: number;                // 減少百分比 (0-100)
+  isCalculating: boolean;           // 是否正在計算中
 }
 
 /**
@@ -81,11 +100,16 @@ export interface AppState {
   // 批次處理檔案
   batchFiles: BatchFileItem[];
   isBatchMode: boolean;
+  selectedFileId: string | null;    // 新增：當前選中的檔案 ID（清單模式）
 
   // 處理狀態
   isProcessing: boolean;
   resultBlob: Blob | null;
   resultPreviewUrl: string | null;
+
+  // 預估大小狀態（新增）
+  estimatedSize: number | null;
+  isEstimating: boolean;
 
   // 設定值
   config: ResizeConfig;
@@ -98,6 +122,13 @@ export interface AppState {
   updateConfig: (partial: Partial<ResizeConfig>) => void;
   processImage: () => Promise<void>;
   reset: () => void;
+
+  // Actions - 預估大小
+  estimateSize: () => Promise<void>;
+  estimateAllSizes: () => Promise<void>;
+
+  // Actions - 選擇檔案（清單模式）
+  selectFile: (id: string | null) => void;
 
   // Actions - 批次模式
   addFiles: (files: File[]) => void;

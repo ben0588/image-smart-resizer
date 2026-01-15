@@ -84,16 +84,10 @@ export default function SmartResizer() {
         }
       });
 
-      // 超過 2 個檔案使用 ZIP 打包（避免瀏覽器跳出多次下載權限通知）
-      if (allDownloads.length > 2) {
+      // 批次模式一律打包成 ZIP（避免瀏覽器跳出多次下載權限通知）
+      if (allDownloads.length > 0) {
         await downloadBatchAsZip(allDownloads, 'resized-images.zip');
         toast.success(`已打包 ${allDownloads.length} 個檔案為 ZIP 下載`);
-      } else {
-        // 1-2 個檔案直接逐一下載
-        allDownloads.forEach((file) => {
-          downloadImage(file.blob, file.filename);
-        });
-        toast.success(t.batch.completed);
       }
       return;
     }

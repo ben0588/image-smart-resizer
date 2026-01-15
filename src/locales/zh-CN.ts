@@ -19,6 +19,7 @@ export const zhCN: Translation = {
     multipleSupport: '（支持单个或多个文件）',
     localProcessing: '本地处理，图片不会上传到服务器',
     addMore: '添加更多',
+    dropHere: '拖放文件至此加入列表',
   },
 
   // Control Panel
@@ -38,6 +39,15 @@ export const zhCN: Translation = {
     applySize: '套用此尺寸',
     deleteHistory: '删除此历史',
     reset: '重置',
+    estimatedSize: '预估大小',
+    calculating: '计算中...',
+    reduction: '减少',
+    calculateAllSizes: '试算所有大小',
+    downloadSingle: '下载图片',
+    downloadBatch: '打包下载',
+    downloadAndCompress: '开始压缩并下载',
+    approxTotal: '约共',
+    pendingCalculation: '待计算',
   },
 
   // Image Preview
@@ -57,6 +67,14 @@ export const zhCN: Translation = {
     processing: '处理中',
     done: '已完成',
     error: '错误',
+    clearAll: '清空列表',
+    filename: '文件名称',
+    dimensions: '尺寸',
+    format: '格式',
+    originalSize: '原始大小',
+    compressedSize: '压缩后',
+    selected: '已选择',
+    clickToEdit: '点击编辑设置',
   },
 
   // Footer

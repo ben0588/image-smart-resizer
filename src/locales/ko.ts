@@ -19,6 +19,7 @@ export const ko: Translation = {
     multipleSupport: '(단일 또는 여러 파일 지원)',
     localProcessing: '로컬 처리, 이미지가 서버에 업로드되지 않습니다',
     addMore: '더 추가',
+    dropHere: '파일을 여기에 드롭하여 추가',
   },
 
   // Control Panel
@@ -38,6 +39,15 @@ export const ko: Translation = {
     applySize: '이 크기 적용',
     deleteHistory: '이 기록 삭제',
     reset: '리셋',
+    estimatedSize: '예상 크기',
+    calculating: '계산 중...',
+    reduction: '감소',
+    calculateAllSizes: '모든 크기 계산',
+    downloadSingle: '이미지 다운로드',
+    downloadBatch: '모두 다운로드',
+    downloadAndCompress: '압축 및 다운로드',
+    approxTotal: '총',
+    pendingCalculation: '계산 대기',
   },
 
   // Image Preview
@@ -57,6 +67,14 @@ export const ko: Translation = {
     processing: '처리 중',
     done: '완료',
     error: '오류',
+    clearAll: '모두 지우기',
+    filename: '파일명',
+    dimensions: '크기',
+    format: '형식',
+    originalSize: '원본 크기',
+    compressedSize: '압축 후',
+    selected: '선택됨',
+    clickToEdit: '클릭하여 설정 편집',
   },
 
   // Footer
