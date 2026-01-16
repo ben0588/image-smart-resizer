@@ -48,6 +48,24 @@ export const ja: Translation = {
     downloadAndCompress: '圧縮してダウンロード',
     approxTotal: '合計約',
     pendingCalculation: '計算待ち',
+    // フィットモード
+    fitMode: 'フィットモード',
+    fitCover: 'カバー',
+    fitContain: '含む',
+    fitFill: '引き伸ばし',
+    // アスペクト比プリセット
+    aspectRatioPreset: '比率',
+    aspectOriginal: 'オリジナル',
+    aspectCrop: 'クロップ調整',    cropModified: 'クロップ済み',
+    cropReset: 'クロップリセット',    // クロップモーダル
+    cropAdjustTitle: 'クロップ範囲を調整',
+    cropAdjustDesc: 'ドラッグしてクロップ位置を調整',
+    zoomLevel: 'ズーム',
+    rotation: '回転',
+    rotate90: '90度回転',
+    resetCrop: '位置をリセット',
+    applyCrop: '適用',
+    cancel: 'キャンセル',
   },
 
   // Image Preview

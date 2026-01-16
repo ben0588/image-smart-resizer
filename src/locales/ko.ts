@@ -48,6 +48,26 @@ export const ko: Translation = {
     downloadAndCompress: '압축 및 다운로드',
     approxTotal: '총',
     pendingCalculation: '계산 대기',
+    // 피트 모드
+    fitMode: '피트 모드',
+    fitCover: '자르기',
+    fitContain: '맞추기',
+    fitFill: '늘리기',
+    // 비율 프리셋
+    aspectRatioPreset: '비율',
+    aspectOriginal: '원본',
+    aspectCrop: '크롭 조정',
+    cropModified: '크롭 완료',
+    cropReset: '크롭 초기화',
+    // 크롭 모달
+    cropAdjustTitle: '크롭 범위 조정',
+    cropAdjustDesc: '드래그하여 크롭 위치 조정',
+    zoomLevel: '확대',
+    rotation: '회전',
+    rotate90: '90° 회전',
+    resetCrop: '위치 초기화',
+    applyCrop: '적용',
+    cancel: '취소',
   },
 
   // Image Preview

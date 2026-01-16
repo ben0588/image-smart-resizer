@@ -46,6 +46,26 @@ export const en = {
     downloadAndCompress: 'Compress & Download',
     approxTotal: 'Total',
     pendingCalculation: 'Pending',
+    // Fit Mode
+    fitMode: 'Fit Mode',
+    fitCover: 'Cover',
+    fitContain: 'Contain',
+    fitFill: 'Fill',
+    // Aspect Ratio Presets
+    aspectRatioPreset: 'Ratio',
+    aspectOriginal: 'Original',
+    aspectCrop: 'Adjust Crop',
+    cropModified: 'Cropped',
+    cropReset: 'Reset Crop',
+    // Crop Modal
+    cropAdjustTitle: 'Adjust Crop',
+    cropAdjustDesc: 'Drag to adjust crop position',
+    zoomLevel: 'Zoom',
+    rotation: 'Rotation',
+    rotate90: 'Rotate 90°',
+    resetCrop: 'Reset Position',
+    applyCrop: 'Apply',
+    cancel: 'Cancel',
   },
 
   // Image Preview

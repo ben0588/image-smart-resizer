@@ -5,6 +5,10 @@
 ## 🚀 主要功能
 
 - **高品質縮放**：使用 Pica (Lanczos3 演算法) 確保縮放後的圖片畫質依然清晰。
+- **非破壞性裁切與旋轉**：
+  - 加強版裁切功能，支援 90 度快速旋轉、縮放與比例調整。
+  - **非破壞性工作流程**：始終基於「原始大圖」進行裁切調整，避免重複編輯導致的畫質損失。
+  - 專業級 UI：提供九宮格輔助線與直覺的縮放控制。
 - **批次處理**：支援同時上傳與處理多張圖片，並提供動態格狀佈局 (Adaptive Grid) 預覽。
 - **格式轉換**：支援 JPG、PNG、WebP、ICO 格式互轉，並可自訂壓縮品質。
 - **SVG 轉換**：支援將 SVG 檔案轉換為常見的 PNG 尺寸（48、180、192、512px），適合製作 Favicon 與應用程式圖示。
@@ -20,12 +24,10 @@
 
 - **框架**：Next.js 15 (App Router)
 - **狀態管理**：Zustand
-- **圖片引擎**：Pica (High-performance JS image resizer)
+- **圖片引擎**：Pica (High-performance JS image resizer) + Canvas API (Rotation/Crop)
 - **樣式**：Tailwind CSS v4
 - **語系架構**：自定義 Context + Cookie (SSR 友善)
-- **打包工具**：JSZip
-- **通知系統**：React-Toastify
-- **圖標**：Lucide React
+- **其他關鍵庫**：react-easy-crop, JSZip, React-Toastify, Lucide React
 
 ## 📦 安裝與執行
 

@@ -9,12 +9,13 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { Loader2, X, Eye, Plus, Download } from 'lucide-react';
-import type { BatchFileItem } from '@/src/types';
+import { Loader2, X, Eye, Plus, Download, Scissors } from 'lucide-react';
+import type { BatchFileItem, CropData } from '@/src/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { downloadImage } from '@/src/lib/engine/processor';
+import { downloadImage, resizeImage, createPreviewURL, revokePreviewURL } from '@/src/lib/engine/processor';
 import { replaceExtension, validateImageFile } from '@/src/lib/utils';
 import { Modal } from '@/src/components/ui/Modal';
+import { CropModal } from '@/src/components/ui/CropModal';
 import useAppStore from '@/src/store/use-app-store';
 import { BatchListView } from './BatchListView';
 
@@ -27,10 +28,59 @@ interface BatchPreviewProps {
 export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProps) {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
+  const [cropFileId, setCropFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addFiles = useAppStore((s) => s.addFiles);
+  const config = useAppStore((s) => s.config);
   const selectedFileId = useAppStore((s) => s.selectedFileId);
   const selectFile = useAppStore((s) => s.selectFile);
+  const setCropForFile = useAppStore((s) => s.setCropForFile);
+
+  // 取得要裁切的檔案
+  const cropFile = cropFileId ? files.find((f) => f.id === cropFileId) : null;
+
+  // 處理預覽圖片 - 執行 Pica 處理後顯示最終效果
+  const handlePreviewClick = async (item: BatchFileItem) => {
+    setIsPreviewLoading(true);
+    // 先設一個暫態以顯示 loading modal
+    setPreviewImage('loading');
+    try {
+      const blob = await resizeImage(item.file, {
+        width: config.width,
+        height: config.height,
+        format: config.format,
+        quality: config.quality,
+        fitMode: config.fitMode,
+        customCrop: item.customCrop,
+        rotation: item.cropData?.rotation ?? 0,
+      });
+      
+      const previewUrl = createPreviewURL(blob);
+      setPreviewImage(previewUrl);
+    } catch (error) {
+      console.error('預覽處理失敗:', error);
+      setPreviewImage(item.previewUrl);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  // 關閉預覽時清理 URL
+  const handleClosePreview = () => {
+    if (previewImage && previewImage !== 'loading' && !files.some(f => f.previewUrl === previewImage)) {
+      revokePreviewURL(previewImage);
+    }
+    setPreviewImage(null);
+  };
+
+  // 處理裁切確認 - 接收完整的 CropData
+  const handleCropConfirm = (cropData: CropData) => {
+    if (cropFileId) {
+      setCropForFile(cropFileId, cropData);
+    }
+    setCropFileId(null);
+  };
 
   // 處理額外檔案選擇
   const handleAddMore = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,28 +129,64 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
             fileInputRef={fileInputRef}
             handleAddMore={handleAddMore}
             previewImage={previewImage}
-            setPreviewImage={setPreviewImage}
+            isPreviewLoading={isPreviewLoading}
+            onPreviewClick={handlePreviewClick}
+            onClosePreview={handleClosePreview}
+            onCropClick={setCropFileId}
+            onCropReset={(id) => setCropForFile(id, undefined)}
+            fitMode={config.fitMode}
             t={t}
           />
         </div>
+
+        {/* 裁切彈窗 */}
+        {cropFile && (
+          <CropModal
+            imageUrl={cropFile.previewUrl}
+            targetWidth={config.width}
+            targetHeight={config.height}
+            initialCropData={cropFile.cropData}
+            onConfirm={handleCropConfirm}
+            onCancel={() => setCropFileId(null)}
+          />
+        )}
       </>
     );
   }
 
   // 單張圖片或預設：使用原本的卡片模式
   return (
-    <MobileCardView
-      files={files}
-      isProcessing={isProcessing}
-      onRemove={onRemove}
-      onSelect={selectFile}
-      selectedFileId={selectedFileId}
-      fileInputRef={fileInputRef}
-      handleAddMore={handleAddMore}
-      previewImage={previewImage}
-      setPreviewImage={setPreviewImage}
-      t={t}
-    />
+    <>
+      <MobileCardView
+        files={files}
+        isProcessing={isProcessing}
+        onRemove={onRemove}
+        onSelect={selectFile}
+        selectedFileId={selectedFileId}
+        fileInputRef={fileInputRef}
+        handleAddMore={handleAddMore}
+        previewImage={previewImage}
+        isPreviewLoading={isPreviewLoading}
+        onPreviewClick={handlePreviewClick}
+        onClosePreview={handleClosePreview}
+        onCropClick={setCropFileId}
+        onCropReset={(id) => setCropForFile(id, undefined)}
+        fitMode={config.fitMode}
+        t={t}
+      />
+
+      {/* 裁切彈窗 */}
+      {cropFile && (
+        <CropModal
+          imageUrl={cropFile.previewUrl}
+          targetWidth={config.width}
+          targetHeight={config.height}
+          initialCropData={cropFile.cropData}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropFileId(null)}
+        />
+      )}
+    </>
   );
 }
 
@@ -114,7 +200,12 @@ interface MobileCardViewProps {
   fileInputRef: React.RefObject<HTMLInputElement | null>;
   handleAddMore: (e: React.ChangeEvent<HTMLInputElement>) => void;
   previewImage: string | null;
-  setPreviewImage: (url: string | null) => void;
+  isPreviewLoading: boolean;
+  onPreviewClick: (item: BatchFileItem) => void;
+  onClosePreview: () => void;
+  onCropClick: (id: string) => void;
+  onCropReset: (id: string) => void;
+  fitMode: string;
   t: ReturnType<typeof useTranslation>['t'];
 }
 
@@ -127,7 +218,12 @@ function MobileCardView({
   fileInputRef,
   handleAddMore,
   previewImage,
-  setPreviewImage,
+  isPreviewLoading,
+  onPreviewClick,
+  onClosePreview,
+  onCropClick,
+  onCropReset,
+  fitMode,
   t,
 }: MobileCardViewProps) {
   return (
@@ -143,15 +239,19 @@ function MobileCardView({
       />
 
       {/* 圖片預覽 Modal */}
-      <Modal isOpen={previewImage !== null} onClose={() => setPreviewImage(null)}>
-        {previewImage && (
+      <Modal isOpen={previewImage !== null} onClose={onClosePreview}>
+        {isPreviewLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        ) : previewImage && previewImage !== 'loading' ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={previewImage}
             alt="Preview"
             className="w-full h-auto max-h-[70vh] object-contain"
           />
-        )}
+        ) : null}
       </Modal>
 
       <div className="p-6">
@@ -203,10 +303,42 @@ function MobileCardView({
                       <X className="w-4 h-4" />
                     </button>
                   )}
+                  {/* 裁切按鈕 */}
+                  {!isProcessing && item.status === 'pending' && fitMode === 'cover' && (
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onCropClick(item.id);
+                        }}
+                        className={`p-2 rounded-full transition-colors cursor-pointer ${
+                          item.cropData 
+                            ? 'bg-indigo-500 text-white hover:bg-indigo-600' 
+                            : 'bg-white/90 hover:bg-blue-500 hover:text-white'
+                        }`}
+                        title={item.cropData ? t.controls.cropModified : t.controls.aspectCrop}
+                      >
+                        <Scissors className={`w-4 h-4 ${item.cropData ? 'stroke-[2.5]' : ''}`} />
+                      </button>
+                      {/* 重置裁切按鈕 */}
+                      {item.cropData && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onCropReset(item.id);
+                          }}
+                          className="p-1.5 bg-white/90 hover:bg-red-500 hover:text-white text-slate-500 rounded-full transition-colors cursor-pointer"
+                          title={t.controls.cropReset}
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      )}
+                    </div>
+                  )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      setPreviewImage(item.previewUrl);
+                      onPreviewClick(item);
                     }}
                     className="p-2 bg-white/90 hover:bg-indigo-500 hover:text-white rounded-full transition-colors cursor-pointer"
                     title={t.batch.preview}

@@ -158,6 +158,7 @@ export default function SmartResizer() {
                 sourcePreviewUrl && (
                   <ImagePreview
                     src={resultPreviewUrl || sourcePreviewUrl}
+                    originalSrc={sourcePreviewUrl}
                     originalDimensions={originalDimensions}
                     fileSize={sourceFile?.size}
                     isProcessing={isProcessing}

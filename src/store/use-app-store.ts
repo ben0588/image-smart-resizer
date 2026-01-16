@@ -38,7 +38,13 @@ const useAppStore = create<AppState>((set, get) => ({
     aspectRatio: 4 / 3,
     format: 'image/webp',
     quality: 0.85, // 85%
+    fitMode: 'cover', // 預設為裁切填滿
   },
+
+  // 單張模式的自訂裁切區域
+  customCrop: null as import('@/src/types').CropArea | null,
+  // 單張模式的完整裁切資料（用於恢復 UI 狀態）
+  cropData: null as import('@/src/types').CropData | null,
 
   error: null,
 
@@ -120,7 +126,13 @@ const useAppStore = create<AppState>((set, get) => ({
       estimatedSize: undefined,
       isEstimating: false,
       error: undefined,
+      // 如果尺寸變更，清除自訂裁切
+      customCrop: (partial.width !== undefined || partial.height !== undefined) ? undefined : f.customCrop,
+      cropData: (partial.width !== undefined || partial.height !== undefined) ? undefined : f.cropData,
     }));
+
+    // 如果尺寸變更，也清除單張模式的 customCrop 和 cropData
+    const shouldResetCrop = partial.width !== undefined || partial.height !== undefined;
 
     set({ 
       config: newConfig,
@@ -128,6 +140,9 @@ const useAppStore = create<AppState>((set, get) => ({
       // 也清除單檔案模式的處理結果
       resultBlob: null,
       resultPreviewUrl: state.resultPreviewUrl ? (revokePreviewURL(state.resultPreviewUrl), null) : null,
+      // 尺寸變更時清除 customCrop 和 cropData
+      customCrop: shouldResetCrop ? null : state.customCrop,
+      cropData: shouldResetCrop ? null : state.cropData,
     });
   },
 
@@ -157,6 +172,9 @@ const useAppStore = create<AppState>((set, get) => ({
         height: config.height,
         format: config.format,
         quality: config.quality,
+        fitMode: config.fitMode,
+        customCrop: state.customCrop ?? undefined,
+        rotation: state.cropData?.rotation ?? 0,
       });
 
       // 建立預覽 URL
@@ -195,7 +213,7 @@ const useAppStore = create<AppState>((set, get) => ({
     });
 
     // 保留使用者最後選擇的格式和品質
-    const { format, quality } = state.config;
+    const { format, quality, fitMode } = state.config;
 
     set({
       sourceFile: null,
@@ -206,6 +224,8 @@ const useAppStore = create<AppState>((set, get) => ({
       isProcessing: false,
       resultBlob: null,
       resultPreviewUrl: null,
+      customCrop: null, // 重置單張模式裁切
+      cropData: null, // 重置完整裁切資料
       config: {
         width: 800,
         height: 600,
@@ -213,6 +233,7 @@ const useAppStore = create<AppState>((set, get) => ({
         aspectRatio: 4 / 3,
         format, // 保留上次選擇的格式
         quality, // 保留上次選擇的品質
+        fitMode, // 保留上次選擇的縮放模式
       },
       error: null,
     });
@@ -368,6 +389,9 @@ const useAppStore = create<AppState>((set, get) => ({
               height,
               format: config.format,
               quality: config.quality,
+              fitMode: config.fitMode,
+              customCrop: item.customCrop,
+              rotation: item.cropData?.rotation ?? 0,
             });
 
             // 更新狀態為完成
@@ -439,6 +463,9 @@ const useAppStore = create<AppState>((set, get) => ({
         height: config.height,
         format: config.format,
         quality: config.quality,
+        fitMode: config.fitMode,
+        customCrop: state.customCrop ?? undefined,
+        rotation: state.cropData?.rotation ?? 0,
       });
 
       set({
@@ -498,6 +525,9 @@ const useAppStore = create<AppState>((set, get) => ({
           height: currentState.config.height,
           format: currentState.config.format,
           quality: currentState.config.quality,
+          fitMode: currentState.config.fitMode,
+          customCrop: item.customCrop,
+          rotation: item.cropData?.rotation ?? 0,
         });
 
         set((state) => ({
@@ -552,6 +582,54 @@ const useAppStore = create<AppState>((set, get) => ({
     img.src = targetItem.previewUrl;
 
     set({ selectedFileId: id });
+  },
+
+  /**
+   * 設定批次檔案的自訂裁切資料
+   * 儲存完整的 cropData 用於恢復 UI，並提取 cropArea 用於實際裁切
+   */
+  setCropForFile: (id: string, cropData: import('@/src/types').CropData | undefined) => {
+    set((state) => ({
+      batchFiles: state.batchFiles.map((f) =>
+        f.id === id
+          ? { 
+              ...f, 
+              cropData,
+              customCrop: cropData?.cropArea,
+              status: 'pending' as const, 
+              resultBlob: undefined 
+            }
+          : f
+      ),
+    }));
+  },
+
+  /**
+   * 設定單張模式的自訂裁切資料
+   * 設定後自動觸發 processImage 來即時更新預覽
+   */
+  setCustomCrop: (cropData: import('@/src/types').CropData | null) => {
+    const state = get();
+    
+    // 清除舊的預覽
+    if (state.resultPreviewUrl) {
+      revokePreviewURL(state.resultPreviewUrl);
+    }
+    
+    set({ 
+      cropData,
+      customCrop: cropData?.cropArea ?? null,
+      resultBlob: null,
+      resultPreviewUrl: null,
+    });
+    
+    // 如果有設定裁切且有來源檔案，自動執行處理以更新預覽
+    if (cropData && state.sourceFile) {
+      // 延遲一個 tick 確保狀態已更新
+      setTimeout(() => {
+        get().processImage();
+      }, 0);
+    }
   },
 }));
 

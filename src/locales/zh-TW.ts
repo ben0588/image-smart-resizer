@@ -48,6 +48,26 @@ export const zhTW: Translation = {
     downloadAndCompress: '開始壓縮並下載',
     approxTotal: '約共',
     pendingCalculation: '待計算',
+    // 縮放模式
+    fitMode: '縮放模式',
+    fitCover: '裁切填滿',
+    fitContain: '完整保留',
+    fitFill: '強制拉伸',
+    // 比例預設值
+    aspectRatioPreset: '比例',
+    aspectOriginal: '原始',
+    aspectCrop: '調整裁切',
+    cropModified: '已手動裁切',
+    cropReset: '重置裁切',
+    // 裁切彈窗
+    cropAdjustTitle: '調整裁切範圍',
+    cropAdjustDesc: '拖曳以調整裁切位置',
+    zoomLevel: '縮放',
+    rotation: '旋轉',
+    rotate90: '旋轉 90°',
+    resetCrop: '重置位置',
+    applyCrop: '套用',
+    cancel: '取消',
   },
 
   // Image Preview

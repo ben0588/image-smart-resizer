@@ -15,12 +15,15 @@ import {
   Trash2,
   Check,
   ArrowRight,
+  Scissors,
+  X,
 } from 'lucide-react';
-import type { BatchFileItem } from '@/src/types';
+import type { BatchFileItem, CropData } from '@/src/types';
 import { useTranslation } from '@/src/hooks/useTranslation';
-import { downloadImage } from '@/src/lib/engine/processor';
+import { downloadImage, resizeImage, createPreviewURL, revokePreviewURL } from '@/src/lib/engine/processor';
 import { replaceExtension, formatFileSize, validateImageFile } from '@/src/lib/utils';
 import { Modal } from '@/src/components/ui/Modal';
+import { CropModal } from '@/src/components/ui/CropModal';
 import useAppStore from '@/src/store/use-app-store';
 
 interface BatchListViewProps {
@@ -55,11 +58,67 @@ export function BatchListView({
 }: BatchListViewProps) {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false);
   const [hoveredId, setHoveredId] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
+  const [cropFileId, setCropFileId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const addFiles = useAppStore((s) => s.addFiles);
   const config = useAppStore((s) => s.config);
+  const setCropForFile = useAppStore((s) => s.setCropForFile);
+
+  // 取得要裁切的檔案
+  const cropFile = cropFileId ? files.find((f) => f.id === cropFileId) : null;
+
+  // 處理預覽圖片 - 執行 Pica 處理後顯示最終效果
+  const handlePreviewClick = async (item: BatchFileItem) => {
+    setIsPreviewLoading(true);
+    try {
+      // 執行圖片處理
+      const blob = await resizeImage(item.file, {
+        width: config.width,
+        height: config.height,
+        format: config.format,
+        quality: config.quality,
+        fitMode: config.fitMode,
+        customCrop: item.customCrop,
+        rotation: item.cropData?.rotation ?? 0,
+      });
+      
+      // 建立預覽 URL
+      const previewUrl = createPreviewURL(blob);
+      
+      // 如果有舊的預覽 URL，先釋放
+      if (previewImage) {
+        revokePreviewURL(previewImage);
+      }
+      
+      setPreviewImage(previewUrl);
+    } catch (error) {
+      console.error('預覽處理失敗:', error);
+      // 如果處理失敗，fallback 到原始預覽
+      setPreviewImage(item.previewUrl);
+    } finally {
+      setIsPreviewLoading(false);
+    }
+  };
+
+  // 關閉預覽時清理 URL
+  const handleClosePreview = () => {
+    if (previewImage && !files.some(f => f.previewUrl === previewImage)) {
+      // 只有當 previewImage 不是原始 previewUrl 時才 revoke
+      revokePreviewURL(previewImage);
+    }
+    setPreviewImage(null);
+  };
+
+  // 處理裁切確認 - 接收完整的 CropData
+  const handleCropConfirm = (cropData: CropData) => {
+    if (cropFileId) {
+      setCropForFile(cropFileId, cropData);
+    }
+    setCropFileId(null);
+  };
 
   // 處理拖放檔案
   const handleDragOver = (e: React.DragEvent) => {
@@ -127,15 +186,19 @@ export function BatchListView({
       />
 
       {/* 圖片預覽 Modal */}
-      <Modal isOpen={previewImage !== null} onClose={() => setPreviewImage(null)}>
-        {previewImage && (
+      <Modal isOpen={previewImage !== null} onClose={handleClosePreview}>
+        {isPreviewLoading ? (
+          <div className="flex items-center justify-center p-12">
+            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+          </div>
+        ) : previewImage ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={previewImage}
             alt="Preview"
             className="w-full h-auto max-h-[70vh] object-contain"
           />
-        )}
+        ) : null}
       </Modal>
 
       {/* 標題列 */}
@@ -170,7 +233,7 @@ export function BatchListView({
           const originalSize = item.file.size;
           const estimatedSize = item.estimatedSize;
           const reduction = estimatedSize 
-            ? Math.round((1 - estimatedSize / originalSize) * 100)
+            ? Math.max(-99, Math.round((1 - estimatedSize / originalSize) * 100))
             : null;
 
           return (
@@ -274,13 +337,45 @@ export function BatchListView({
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setPreviewImage(item.previewUrl);
+                        handlePreviewClick(item);
                       }}
                       className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors cursor-pointer"
                       title={t.batch.preview}
                     >
                       <Eye className="w-4 h-4" />
                     </button>
+                    {/* 裁切調整按鈕（僅 Cover 模式） */}
+                    {config.fitMode === 'cover' && (
+                      <div className="flex items-center">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setCropFileId(item.id);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
+                            item.cropData 
+                              ? 'text-indigo-600 bg-indigo-50 hover:bg-indigo-100' 
+                              : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'
+                          }`}
+                          title={item.cropData ? t.controls.cropModified : t.controls.aspectCrop}
+                        >
+                          <Scissors className={`w-4 h-4 ${item.cropData ? 'stroke-[2.5]' : ''}`} />
+                        </button>
+                        {/* 重置裁切按鈕（僅在已裁切時顯示） */}
+                        {item.cropData && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCropForFile(item.id, undefined);
+                            }}
+                            className="p-1 text-slate-400 hover:text-red-500 rounded transition-colors cursor-pointer"
+                            title={t.controls.cropReset}
+                          >
+                            <X className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -358,6 +453,18 @@ export function BatchListView({
           <span className="text-sm font-medium">{t.upload.dropHere}</span>
         </div>
       </div>
+
+      {/* 裁切彈窗 */}
+      {cropFile && (
+        <CropModal
+          imageUrl={cropFile.previewUrl}
+          targetWidth={config.width}
+          targetHeight={config.height}
+          initialCropData={cropFile.cropData}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropFileId(null)}
+        />
+      )}
     </div>
   );
 }

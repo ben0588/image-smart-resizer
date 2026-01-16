@@ -12,6 +12,44 @@
 export type ImageFormat = 'image/jpeg' | 'image/png' | 'image/webp' | 'image/x-icon';
 
 /**
+ * 縮放模式
+ * - cover: 裁切填滿（置中裁切，填滿目標尺寸）
+ * - contain: 完整保留（等比縮放，可能有留白）
+ * - fill: 強制拉伸（變形填滿）
+ */
+export type FitMode = 'cover' | 'contain' | 'fill';
+
+/**
+ * 比例預設值
+ */
+export type AspectRatioPreset = 'original' | '16:9' | '4:3' | '1:1' | '9:16';
+
+/**
+ * 自訂裁切參數 (react-easy-crop 輸出格式)
+ */
+export interface CropArea {
+  x: number;      // 裁切區域左上角 X 座標 (相對於圖片)
+  y: number;      // 裁切區域左上角 Y 座標 (相對於圖片)
+  width: number;  // 裁切區域寬度
+  height: number; // 裁切區域高度
+}
+
+/**
+ * 完整裁切資料（用於恢復裁切狀態）
+ * 包含 react-easy-crop 需要的所有參數
+ */
+export interface CropData {
+  cropArea: CropArea;       // 最終裁切區域（像素）
+  cropPosition: {           // 裁切框位置（用於恢復 UI 狀態）
+    x: number;
+    y: number;
+  };
+  zoom: number;             // 縮放比例 (1-3)
+  aspect: number;           // 長寬比
+  rotation: number;         // 旋轉角度 (0, 90, 180, 270 或任意角度)
+}
+
+/**
  * 圖片處理核心設定
  * 用於 Zustand Store 與 Pica 運算參數
  */
@@ -22,6 +60,7 @@ export interface ResizeConfig {
   aspectRatio: number;              // 原始圖片長寬比 (Width / Height)
   format: ImageFormat;              // 輸出格式
   quality: number;                  // 壓縮品質 0.1 ~ 1.0 (10-100)
+  fitMode: FitMode;                 // 縮放模式
 }
 
 /**
@@ -44,6 +83,9 @@ export interface ProcessOptions {
   height: number;
   format: ImageFormat;
   quality: number;
+  fitMode?: FitMode;          // 縮放模式 (cover/contain/fill)
+  customCrop?: CropArea;      // 自訂裁切區域
+  rotation?: number;          // 旋轉角度 (0-360)
 }
 
 // ============ Store 相關型別 ============
@@ -66,15 +108,19 @@ export interface BatchFileItem {
     url?: string;
   }>;
   error?: string;                   // 錯誤訊息
-  // 新增：原始圖片尺寸
+  // 原始圖片尺寸
   originalDimensions?: {
     width: number;
     height: number;
   };
-  // 新增：預估壓縮後大小
+  // 預估壓縮後大小
   estimatedSize?: number;
-  // 新增：預估計算中
+  // 預估計算中
   isEstimating?: boolean;
+  // 自訂裁切資料（完整的裁切狀態，用於恢復 UI）
+  cropData?: CropData;
+  // 自訂裁切區域（覆蓋全域 Cover 設定）- 保留以便向後相容
+  customCrop?: CropArea;
 }
 
 /**
@@ -111,6 +157,11 @@ export interface AppState {
   estimatedSize: number | null;
   isEstimating: boolean;
 
+  // 單張模式的自訂裁切區域
+  customCrop: CropArea | null;
+  // 單張模式的完整裁切資料（用於恢復 UI 狀態）
+  cropData: CropData | null;
+
   // 設定值
   config: ResizeConfig;
   
@@ -134,6 +185,10 @@ export interface AppState {
   addFiles: (files: File[]) => void;
   removeFile: (id: string) => void;
   processBatch: () => Promise<void>;
+  
+  // Actions - 裁切功能
+  setCropForFile: (id: string, cropData: CropData | undefined) => void;
+  setCustomCrop: (cropData: CropData | null) => void;
 }
 
 // ============ 元件 Props 型別 ============
@@ -161,7 +216,8 @@ export interface ControlPanelProps {
  * ImagePreview 元件 Props
  */
 export interface ImagePreviewProps {
-  src: string;
+  src: string;                      // 當前預覽圖片 (可能是處理過的)
+  originalSrc: string;              // 原始圖片 (用於裁切)
   originalDimensions: { width: number; height: number } | null;
   fileSize?: number;
   isProcessing: boolean;

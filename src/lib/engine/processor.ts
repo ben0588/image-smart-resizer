@@ -6,9 +6,123 @@
 
 import Pica from 'pica';
 import JSZip from 'jszip';
-import type { ProcessOptions, Dimensions } from '@/src/types';
+import type { ProcessOptions, Dimensions, CropArea } from '@/src/types';
 
 const pica = Pica();
+
+/**
+ * 計算 Cover 模式的裁切區域（置中裁切，填滿目標尺寸）
+ */
+function calculateCoverCrop(
+  srcWidth: number,
+  srcHeight: number,
+  targetWidth: number,
+  targetHeight: number
+): CropArea {
+  const srcRatio = srcWidth / srcHeight;
+  const targetRatio = targetWidth / targetHeight;
+
+  let cropWidth: number, cropHeight: number, x: number, y: number;
+
+  if (srcRatio > targetRatio) {
+    // 來源較寬，裁切左右
+    cropHeight = srcHeight;
+    cropWidth = srcHeight * targetRatio;
+    x = (srcWidth - cropWidth) / 2;
+    y = 0;
+  } else {
+    // 來源較高，裁切上下
+    cropWidth = srcWidth;
+    cropHeight = srcWidth / targetRatio;
+    x = 0;
+    y = (srcHeight - cropHeight) / 2;
+  }
+
+  return { x, y, width: cropWidth, height: cropHeight };
+}
+
+/**
+ * 計算 Contain 模式的縮放尺寸和位置（等比縮放，可能有留白）
+ */
+function calculateContainFit(
+  srcWidth: number,
+  srcHeight: number,
+  targetWidth: number,
+  targetHeight: number
+): { scaledWidth: number; scaledHeight: number; offsetX: number; offsetY: number } {
+  const srcRatio = srcWidth / srcHeight;
+  const targetRatio = targetWidth / targetHeight;
+
+  let scaledWidth: number, scaledHeight: number;
+
+  if (srcRatio > targetRatio) {
+    // 來源較寬，以寬度為準
+    scaledWidth = targetWidth;
+    scaledHeight = targetWidth / srcRatio;
+  } else {
+    // 來源較高，以高度為準
+    scaledHeight = targetHeight;
+    scaledWidth = targetHeight * srcRatio;
+  }
+
+  const offsetX = (targetWidth - scaledWidth) / 2;
+  const offsetY = (targetHeight - scaledHeight) / 2;
+
+  return { scaledWidth, scaledHeight, offsetX, offsetY };
+}
+
+/**
+ * 將圖片旋轉指定角度
+ * @param img - 原始圖片元素
+ * @param rotation - 旋轉角度（0-360度）
+ * @returns 旋轉後的 canvas 和新的尺寸
+ */
+function rotateImage(
+  img: HTMLImageElement,
+  rotation: number
+): { canvas: HTMLCanvasElement; width: number; height: number } {
+  // 正規化角度到 0-360 範圍
+  const normalizedRotation = ((rotation % 360) + 360) % 360;
+  
+  // 如果沒有旋轉，直接返回原始圖片
+  if (normalizedRotation === 0) {
+    const canvas = document.createElement('canvas');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(img, 0, 0);
+    }
+    return { canvas, width: img.naturalWidth, height: img.naturalHeight };
+  }
+
+  const radians = (normalizedRotation * Math.PI) / 180;
+  const srcWidth = img.naturalWidth;
+  const srcHeight = img.naturalHeight;
+
+  // 計算旋轉後的邊界框尺寸
+  const sin = Math.abs(Math.sin(radians));
+  const cos = Math.abs(Math.cos(radians));
+  const newWidth = Math.ceil(srcWidth * cos + srcHeight * sin);
+  const newHeight = Math.ceil(srcHeight * cos + srcWidth * sin);
+
+  // 建立旋轉後的 canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = newWidth;
+  canvas.height = newHeight;
+  const ctx = canvas.getContext('2d');
+
+  if (!ctx) {
+    throw new Error('無法建立 Canvas Context');
+  }
+
+  // 移動到中心點，旋轉，然後繪製
+  ctx.translate(newWidth / 2, newHeight / 2);
+  ctx.rotate(radians);
+  ctx.drawImage(img, -srcWidth / 2, -srcHeight / 2);
+
+  return { canvas, width: newWidth, height: newHeight };
+}
 
 /**
  * 調整圖片大小
@@ -20,7 +134,12 @@ export async function resizeImage(
   file: File,
   options: ProcessOptions
 ): Promise<Blob> {
-  const { width, height, format, quality } = options;
+  const { width, height, format, quality, fitMode = 'cover', customCrop, rotation = 0 } = options;
+
+  // 驗證尺寸，防止 0x0 錯誤
+  if (!width || !height || width <= 0 || height <= 0) {
+    return Promise.reject(new Error(`無效的輸出尺寸: ${width}x${height}`));
+  }
 
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -39,33 +158,136 @@ export async function resizeImage(
           img.onload = () => res();
         });
 
-        // 建立來源 canvas
-        const sourceCanvas = document.createElement('canvas');
-        sourceCanvas.width = img.naturalWidth;
-        sourceCanvas.height = img.naturalHeight;
-        const sourceCtx = sourceCanvas.getContext('2d');
+        // 如果有旋轉，先旋轉圖片
+        let workingSource: HTMLCanvasElement | HTMLImageElement = img;
+        let srcWidth = img.naturalWidth;
+        let srcHeight = img.naturalHeight;
         
-        if (!sourceCtx) {
-          throw new Error('無法建立 Canvas Context');
+        if (rotation !== 0) {
+          const rotated = rotateImage(img, rotation);
+          workingSource = rotated.canvas;
+          srcWidth = rotated.width;
+          srcHeight = rotated.height;
         }
-        
-        sourceCtx.drawImage(img, 0, 0);
 
-        // 建立目標 canvas
-        const targetCanvas = document.createElement('canvas');
-        targetCanvas.width = width;
-        targetCanvas.height = height;
+        // 根據 fitMode 處理不同的縮放邏輯
+        let sourceCanvas: HTMLCanvasElement;
+        let targetCanvas: HTMLCanvasElement;
 
-        // 使用 Pica 進行高品質縮放 (Lanczos3)
-        await pica.resize(sourceCanvas, targetCanvas, {
-          quality: 3, // 最高品質
-          unsharpAmount: 80,
-          unsharpRadius: 0.6,
-          unsharpThreshold: 2,
-        });
+        if (fitMode === 'cover') {
+          // Cover 模式：裁切填滿
+          const crop = customCrop || calculateCoverCrop(srcWidth, srcHeight, width, height);
+          
+          // 建立裁切後的來源 canvas
+          sourceCanvas = document.createElement('canvas');
+          sourceCanvas.width = Math.round(crop.width);
+          sourceCanvas.height = Math.round(crop.height);
+          const sourceCtx = sourceCanvas.getContext('2d');
+          
+          if (!sourceCtx) {
+            throw new Error('無法建立 Canvas Context');
+          }
+          
+          // 使用 9 參數 drawImage 正確裁切
+          // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
+          sourceCtx.drawImage(
+            workingSource,
+            Math.round(crop.x), Math.round(crop.y),  // 來源裁切起點
+            Math.round(crop.width), Math.round(crop.height),  // 來源裁切大小
+            0, 0,  // 目標起點
+            Math.round(crop.width), Math.round(crop.height)  // 目標大小
+          );
 
-        // 轉換為指定格式 (quality 已是 0-1 範圍)
-        // 如果是 ICO，先轉為 PNG 再封裝
+          // 建立目標 canvas
+          targetCanvas = document.createElement('canvas');
+          targetCanvas.width = width;
+          targetCanvas.height = height;
+
+          // 使用 Pica 進行高品質縮放
+          await pica.resize(sourceCanvas, targetCanvas, {
+            quality: 3,
+            unsharpAmount: 80,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2,
+          });
+
+        } else if (fitMode === 'contain') {
+          // Contain 模式：完整保留（可能有留白）
+          const fit = calculateContainFit(srcWidth, srcHeight, width, height);
+          
+          // 先將原圖縮放到適當大小
+          sourceCanvas = document.createElement('canvas');
+          sourceCanvas.width = srcWidth;
+          sourceCanvas.height = srcHeight;
+          const sourceCtx = sourceCanvas.getContext('2d');
+          
+          if (!sourceCtx) {
+            throw new Error('無法建立 Canvas Context');
+          }
+          
+          sourceCtx.drawImage(workingSource, 0, 0);
+
+          // 建立中間 canvas 進行縮放
+          const scaledCanvas = document.createElement('canvas');
+          scaledCanvas.width = Math.round(fit.scaledWidth);
+          scaledCanvas.height = Math.round(fit.scaledHeight);
+
+          await pica.resize(sourceCanvas, scaledCanvas, {
+            quality: 3,
+            unsharpAmount: 80,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2,
+          });
+
+          // 建立最終目標 canvas（含留白）
+          targetCanvas = document.createElement('canvas');
+          targetCanvas.width = width;
+          targetCanvas.height = height;
+          const targetCtx = targetCanvas.getContext('2d');
+          
+          if (!targetCtx) {
+            throw new Error('無法建立 Canvas Context');
+          }
+
+          // 填充白色背景（或透明，依格式）
+          if (format === 'image/jpeg') {
+            targetCtx.fillStyle = '#FFFFFF';
+            targetCtx.fillRect(0, 0, width, height);
+          }
+
+          // 將縮放後的圖片置中繪製
+          targetCtx.drawImage(
+            scaledCanvas,
+            Math.round(fit.offsetX),
+            Math.round(fit.offsetY)
+          );
+
+        } else {
+          // Fill 模式：強制拉伸（原有行為）
+          sourceCanvas = document.createElement('canvas');
+          sourceCanvas.width = srcWidth;
+          sourceCanvas.height = srcHeight;
+          const sourceCtx = sourceCanvas.getContext('2d');
+          
+          if (!sourceCtx) {
+            throw new Error('無法建立 Canvas Context');
+          }
+          
+          sourceCtx.drawImage(workingSource, 0, 0);
+
+          targetCanvas = document.createElement('canvas');
+          targetCanvas.width = width;
+          targetCanvas.height = height;
+
+          await pica.resize(sourceCanvas, targetCanvas, {
+            quality: 3,
+            unsharpAmount: 80,
+            unsharpRadius: 0.6,
+            unsharpThreshold: 2,
+          });
+        }
+
+        // 轉換為指定格式
         const outputFormat = format === 'image/x-icon' ? 'image/png' : format;
         let blob = await pica.toBlob(
           targetCanvas,
