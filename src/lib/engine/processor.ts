@@ -10,6 +10,66 @@ import type { ProcessOptions, Dimensions, CropArea } from '@/src/types';
 
 const pica = Pica();
 
+// 快取 WebP 編碼支援檢測結果
+let webpEncodeSupportCached: boolean | null = null;
+
+/**
+ * 檢測瀏覽器是否真正支援 WebP 編碼（而不只是解碼）
+ * Safari 14.x 及之前版本可能支援 WebP 解碼但不支援編碼
+ * canvas.toBlob('image/webp') 會靜默回退到 PNG，導致檔案大小異常
+ * @returns {Promise<boolean>} - 如果支援 WebP 編碼返回 true
+ */
+export async function checkWebpEncodeSupport(): Promise<boolean> {
+  // 使用快取避免重複檢測
+  if (webpEncodeSupportCached !== null) {
+    return webpEncodeSupportCached;
+  }
+
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1;
+    canvas.height = 1;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) {
+      webpEncodeSupportCached = false;
+      return false;
+    }
+    
+    // 繪製一個紅色像素
+    ctx.fillStyle = '#FF0000';
+    ctx.fillRect(0, 0, 1, 1);
+
+    // 嘗試輸出為 WebP
+    const blob = await new Promise<Blob | null>((resolve) => {
+      canvas.toBlob((b) => resolve(b), 'image/webp', 0.8);
+    });
+
+    // 檢查是否成功產生 WebP（而非回退到 PNG）
+    if (!blob) {
+      webpEncodeSupportCached = false;
+      return false;
+    }
+
+    // 檢查 MIME 類型
+    // Safari 不支援 WebP 編碼時會回退到 PNG (image/png)
+    const isWebp = blob.type === 'image/webp';
+    
+    // 額外檢查：WebP 1x1 紅色像素應該非常小（通常 < 100 bytes）
+    // PNG 1x1 會稍大一些，但這不是主要判斷依據
+    webpEncodeSupportCached = isWebp;
+    
+    if (!isWebp) {
+      console.warn('瀏覽器不支援 WebP 編碼，將回退到 JPEG。blob.type:', blob.type);
+    }
+    
+    return isWebp;
+  } catch (e) {
+    console.error('WebP 編碼支援檢測失敗:', e);
+    webpEncodeSupportCached = false;
+    return false;
+  }
+}
+
 /**
  * 檢查瀏覽器是否允許 Canvas 畫素讀取（防止指紋保護攔截）
  * 某些瀏覽器（如 Brave）啟用隱私保護時會封鎖 getImageData()
@@ -339,11 +399,25 @@ export async function resizeImage(
         }
 
         // 轉換為指定格式
-        const outputFormat = format === 'image/x-icon' ? 'image/png' : format;
+        // 處理 Safari 不支援 WebP 編碼的情況
+        let outputFormat = format === 'image/x-icon' ? 'image/png' : format;
+        let actualQuality = quality;
+        
+        if (outputFormat === 'image/webp') {
+          const supportsWebp = await checkWebpEncodeSupport();
+          if (!supportsWebp) {
+            // Safari 等不支援 WebP 編碼的瀏覽器，回退到 JPEG
+            console.warn('瀏覽器不支援 WebP 編碼，自動回退到 JPEG 格式');
+            outputFormat = 'image/jpeg';
+            // 保持相似的壓縮品質
+            actualQuality = quality;
+          }
+        }
+        
         let blob = await pica.toBlob(
           targetCanvas,
           outputFormat,
-          quality
+          actualQuality
         );
 
         if (format === 'image/x-icon') {
@@ -457,8 +531,17 @@ export async function convertSvgToPngSizes(
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     // Canvas 轉 Blob
+    // 處理 Safari 不支援 WebP 編碼的情況
+    let outputFormat = format;
+    if (format === 'image/webp') {
+      const supportsWebp = await checkWebpEncodeSupport();
+      if (!supportsWebp) {
+        outputFormat = 'image/jpeg';
+      }
+    }
+    
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), format, quality)
+      canvas.toBlob((b) => resolve(b), outputFormat, quality)
     );
 
     if (!blob) throw new Error('SVG 轉 PNG Blob 失敗');
