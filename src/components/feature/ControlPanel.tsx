@@ -77,10 +77,10 @@ export default function ControlPanel({
     }
   }, [debouncedQuality, debouncedWidth, debouncedHeight, debouncedFormat, currentFile, selectedFileId, isBatchMode, estimateSizeAction]);
 
-  // 計算壓縮減少百分比
+  // 計算壓縮減少百分比 (限制在 -99% 到 99% 之間)
   const originalSize = currentFile?.size || 0;
   const reduction = estimatedSize && originalSize 
-    ? Math.max(-99, Math.round((1 - estimatedSize / originalSize) * 100))
+    ? Math.min(99, Math.max(-99, Math.round((1 - estimatedSize / originalSize) * 100)))
     : null;
 
   // 計算批次模式下的總預估大小

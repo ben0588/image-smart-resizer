@@ -151,8 +151,9 @@ export const en = {
 
   // SEO
   seo: {
-    description: "An efficient, clean, and privacy-focused smart image resizing tool that processes everything in the browser.",
-    features: "Image Resizing, Format Conversion, SVG to PNG, Privacy Protection"
+    title: "Free Online Image Resizer & Converter (Privacy-First) | Image Smart Resizer",
+    description: "A privacy-first, high-quality online image resizer and converter. Batch resize images, convert SVG to PNG, and crop photos directly in your browser. No server uploads required—your photos stay on your device. Powered by Pica for professional-grade results.",
+    features: "free image resizer, batch image converter, online photo editor, SVG to PNG converter, high quality image resizing, resize images without uploading, privacy-focused image tool, crop and rotate images, make favicon, convert WebP to JPG, client-side image processing, Pica algorithm",
   },
 
   // Errors

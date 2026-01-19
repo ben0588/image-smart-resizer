@@ -19,6 +19,7 @@ import ImagePreview from '@/src/components/feature/ImagePreview';
 import { BatchPreview } from '@/src/components/feature/BatchPreview';
 import { LanguageSelector } from '@/src/components/feature/LanguageSelector';
 import { Modal } from '@/src/components/ui/Modal';
+import { CanvasPermissionModal } from '@/src/components/ui/CanvasPermissionModal';
 
 export default function SmartResizer() {
   const { t } = useTranslation();
@@ -35,6 +36,8 @@ export default function SmartResizer() {
     config,
     isProcessing,
     error,
+    showCanvasPermissionModal,
+    setShowCanvasPermissionModal,
     setSourceFile,
     updateConfig,
     processImage,
@@ -42,6 +45,15 @@ export default function SmartResizer() {
     removeFile,
     reset,
   } = useAppStore();
+
+  const handleRetry = async () => {
+    setShowCanvasPermissionModal(false);
+    if (isBatchMode) {
+      await processBatch();
+    } else {
+      await processImage();
+    }
+  };
 
   // 處理下載
   const handleDownload = async () => {
@@ -115,10 +127,38 @@ export default function SmartResizer() {
   // 判斷是否顯示編輯器
   const showEditor = sourceFile !== null || isBatchMode;
 
+
+  // json-ld 結構化資料
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: 'Image Smart Resizer',
+    url: 'https://image-smart-resizer.vercel.app',
+    applicationCategory: 'MultimediaApplication',
+    operatingSystem: 'Any',
+    offers: {
+      '@type': 'Offer',
+      price: '0',
+      priceCurrency: 'USD',
+    },
+    featureList: [
+      'Batch Image Resizing',
+      'Privacy-focused (Client-side processing)',
+      'Convert JPG/PNG/WebP/ICO',
+      'SVG to PNG Converter'
+    ],
+    browserRequirements: 'Requires JavaScript. Works in all modern browsers.',
+  };
+
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-700 pb-20">
       {/* 語言選擇器 */}
       <LanguageSelector />
+
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       
       {/* Main Container */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
@@ -249,6 +289,13 @@ export default function SmartResizer() {
             </div>
           </div>
         </Modal>
+
+        {/* Canvas Permission Tutorial Modal */}
+        <CanvasPermissionModal 
+          isOpen={showCanvasPermissionModal}
+          onClose={() => setShowCanvasPermissionModal(false)}
+          onRetry={handleRetry}
+        />
       </div>
     </div>
   );

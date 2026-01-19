@@ -1,5 +1,5 @@
 
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Geist, Geist_Mono } from 'next/font/google';
 import { cookies } from 'next/headers';
 import './globals.css';
@@ -22,6 +22,12 @@ const geistMono = Geist_Mono({
 
 const SUPPORTED_LANGUAGES = ['en', 'zh-TW', 'zh-CN', 'ja', 'ko'];
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#ffffff',
+};
+
 export async function generateMetadata(): Promise<Metadata> {
   // 從伺服器端讀取 Cookie 中的語言偏好
   const cookieStore = await cookies();
@@ -36,8 +42,8 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     // 基礎設定
     title: {
-      template: `%s | ${t.title}`,
-      default: `${t.title} - ${t.subtitle}`,
+      template: `%s | ${t.seo.title}`,
+      default: t.seo.title,
     },
     description: t.seo.description,
     
@@ -63,7 +69,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
     // Open Graph
     openGraph: {
-      title: `${t.title} - ${t.subtitle}`,
+      title: t.seo.title,
       description: t.seo.description,
       url: 'https://image-smart-resizer.vercel.app',
       siteName: t.title,
@@ -82,7 +88,7 @@ export async function generateMetadata(): Promise<Metadata> {
     // Twitter Card
     twitter: {
       card: 'summary_large_image',
-      title: t.title,
+      title: t.seo.title,
       description: t.seo.description,
       images: ['https://image-smart-resizer.vercel.app/1200x630.png'],
     },
@@ -92,6 +98,19 @@ export async function generateMetadata(): Promise<Metadata> {
       icon: '/favicon.ico',
       shortcut: '/favicon-16x16.png',
       apple: '/apple-touch-icon.png',
+    },
+
+    // 語言替代連結
+    alternates: {
+      canonical: 'https://image-smart-resizer.vercel.app',
+      languages: {
+        'en': 'https://image-smart-resizer.vercel.app/en',
+        'zh-TW': 'https://image-smart-resizer.vercel.app/zh-TW',
+        'zh-CN': 'https://image-smart-resizer.vercel.app/zh-CN',
+        'ja': 'https://image-smart-resizer.vercel.app/ja',
+        'ko': 'https://image-smart-resizer.vercel.app/ko',
+        'x-default': 'https://image-smart-resizer.vercel.app/en',
+      },
     },
   };
 }
@@ -110,7 +129,7 @@ export default async function RootLayout({
       : 'en';
 
   return (
-    <html lang={initialLanguage === 'zh-TW' ? 'zh-TW' : initialLanguage === 'zh-CN' ? 'zh-CN' : initialLanguage}>
+    <html lang={initialLanguage}>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <LanguageProvider initialLanguage={initialLanguage}>
           <JsonLd />

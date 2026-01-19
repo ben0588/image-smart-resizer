@@ -11,6 +11,7 @@ import {
   createPreviewURL,
   revokePreviewURL,
   convertSvgToPngSizes,
+  checkCanvasPermission,
 } from '@/src/lib/engine/processor';
 
 const useAppStore = create<AppState>((set, get) => ({
@@ -47,6 +48,9 @@ const useAppStore = create<AppState>((set, get) => ({
   cropData: null as import('@/src/types').CropData | null,
 
   error: null,
+
+  // Canvas 權限 Modal 狀態
+  showCanvasPermissionModal: false,
 
   // === Actions ===
 
@@ -158,6 +162,21 @@ const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    // 驗證尺寸
+    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+      set({ error: '請輸入有效的圖片尺寸', isProcessing: false });
+      return;
+    }
+
+    // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
+    if (!checkCanvasPermission()) {
+      set({
+        showCanvasPermissionModal: true,
+        isProcessing: false,
+      });
+      return;
+    }
+
     set({ isProcessing: true, error: null });
 
     try {
@@ -186,8 +205,10 @@ const useAppStore = create<AppState>((set, get) => ({
         isProcessing: false,
       });
     } catch (error) {
+      const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
       set({
-        error: error instanceof Error ? error.message : '處理圖片時發生錯誤',
+        error: isPermissionError ? null : (error instanceof Error ? error.message : '處理圖片時發生錯誤'),
+        showCanvasPermissionModal: isPermissionError ? true : get().showCanvasPermissionModal,
         isProcessing: false,
       });
     }
@@ -331,6 +352,21 @@ const useAppStore = create<AppState>((set, get) => ({
       return;
     }
 
+    // 驗證尺寸
+    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+      set({ error: '請輸入有效的圖片尺寸', isProcessing: false });
+      return;
+    }
+
+    // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
+    if (!checkCanvasPermission()) {
+      set({
+        showCanvasPermissionModal: true,
+        isProcessing: false,
+      });
+      return;
+    }
+
     set({ isProcessing: true, error: null });
 
     try {
@@ -404,6 +440,13 @@ const useAppStore = create<AppState>((set, get) => ({
             }));
           }
         } catch (error) {
+          const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+          
+          if (isPermissionError) {
+            set({ showCanvasPermissionModal: true, isProcessing: false });
+            return; // 終止後續處理
+          }
+
           // 更新狀態為錯誤
           set((state) => ({
             batchFiles: state.batchFiles.map((f) =>
@@ -436,6 +479,15 @@ const useAppStore = create<AppState>((set, get) => ({
     const state = get();
     const { sourceFile, config, isBatchMode, batchFiles, selectedFileId } = state;
 
+    // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
+    if (!checkCanvasPermission()) {
+      set({
+        showCanvasPermissionModal: true,
+        isEstimating: false,
+      });
+      return;
+    }
+
     // 決定要預估的檔案
     let targetFile: File | null = null;
 
@@ -450,6 +502,12 @@ const useAppStore = create<AppState>((set, get) => ({
     }
 
     if (!targetFile) {
+      set({ estimatedSize: null, isEstimating: false });
+      return;
+    }
+
+    // 驗證尺寸，防止 0x0 錯誤
+    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
       set({ estimatedSize: null, isEstimating: false });
       return;
     }
@@ -484,7 +542,12 @@ const useAppStore = create<AppState>((set, get) => ({
         }));
       }
     } catch (error) {
-      console.error('預估大小失敗:', error);
+      const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+      if (isPermissionError) {
+        set({ showCanvasPermissionModal: true });
+      } else {
+        console.error('預估大小失敗:', error);
+      }
       set({ estimatedSize: null, isEstimating: false });
     }
   },
@@ -494,7 +557,14 @@ const useAppStore = create<AppState>((set, get) => ({
    * 用於多圖模式的「試算所有大小」功能
    */
   estimateAllSizes: async () => {
-    const { batchFiles } = get();
+    const { config, batchFiles } = get();
+
+    // 驗證尺寸
+    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+      return;
+    }
+    
+    // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
 
     if (batchFiles.length === 0) return;
 
@@ -538,6 +608,16 @@ const useAppStore = create<AppState>((set, get) => ({
           ),
         }));
       } catch (error) {
+        const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+        if (isPermissionError) {
+          set({ showCanvasPermissionModal: true });
+          // 標記剩下所有為非計算中
+          set((state) => ({
+            batchFiles: state.batchFiles.map((f) => ({ ...f, isEstimating: false })),
+          }));
+          return; // 終止處理
+        }
+
         console.error(`預估檔案 ${item.file.name} 大小失敗:`, error);
         set((state) => ({
           batchFiles: state.batchFiles.map((f) =>
@@ -630,6 +710,13 @@ const useAppStore = create<AppState>((set, get) => ({
         get().processImage();
       }, 0);
     }
+  },
+
+  /**
+   * 設定 Canvas 權限 Modal 顯示狀態
+   */
+  setShowCanvasPermissionModal: (show: boolean) => {
+    set({ showCanvasPermissionModal: show });
   },
 }));
 

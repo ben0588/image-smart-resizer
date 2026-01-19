@@ -168,6 +168,9 @@ export interface AppState {
   // 錯誤訊息
   error: string | null;
 
+  // Canvas 權限 Modal 狀態
+  showCanvasPermissionModal: boolean;
+
   // Actions - 單檔案模式
   setSourceFile: (file: File) => void;
   updateConfig: (partial: Partial<ResizeConfig>) => void;
@@ -189,6 +192,9 @@ export interface AppState {
   // Actions - 裁切功能
   setCropForFile: (id: string, cropData: CropData | undefined) => void;
   setCustomCrop: (cropData: CropData | null) => void;
+
+  // Actions - Canvas 權限 Modal
+  setShowCanvasPermissionModal: (show: boolean) => void;
 }
 
 // ============ 元件 Props 型別 ============

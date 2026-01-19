@@ -153,8 +153,9 @@ export const zhTW: Translation = {
 
   // SEO
   seo: {
-    description: "一個高效、純淨且重視隱私的圖片智慧調整工具，完全在瀏覽器端完成處理。",
-    features: "圖片縮放, 格式轉換, SVG轉PNG, 隱私保護"
+    title: "免費線上圖片縮放與轉檔工具 (免上傳) | Image Smart Resizer",
+    description: "免費且重視隱私的線上批次圖片縮放工具。採用 Pica 高畫質演算法，支援 JPG、PNG、WebP、ICO 互轉及 SVG 轉 PNG (Favicon 製作)。所有處理皆在瀏覽器端完成，圖片無需上傳伺服器，確保資料絕對安全。",
+    features: "線上圖片縮放, 批次縮圖, 圖片轉檔, 照片解析度調整, 圖片壓縮工具, SVG 轉 PNG, 製作 Favicon, 圖片裁切, 圖片旋轉, WebP 轉 JPG, Pica 演算法, 高畫質縮圖, 隱私保護, 免上傳, 客戶端處理",
   },
 
   // Errors

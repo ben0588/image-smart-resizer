@@ -233,7 +233,7 @@ export function BatchListView({
           const originalSize = item.file.size;
           const estimatedSize = item.estimatedSize;
           const reduction = estimatedSize 
-            ? Math.max(-99, Math.round((1 - estimatedSize / originalSize) * 100))
+            ? Math.min(99, Math.max(-99, Math.round((1 - estimatedSize / originalSize) * 100)))
             : null;
 
           return (

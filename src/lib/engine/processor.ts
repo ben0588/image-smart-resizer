@@ -11,6 +11,57 @@ import type { ProcessOptions, Dimensions, CropArea } from '@/src/types';
 const pica = Pica();
 
 /**
+ * 檢查瀏覽器是否允許 Canvas 畫素讀取（防止指紋保護攔截）
+ * 某些瀏覽器（如 Brave）啟用隱私保護時會封鎖 getImageData()
+ * 使用更接近 Pica 實際操作的測試方法
+ * @returns {boolean} - 如果允許讀取返回 true，否則返回 false
+ */
+export function checkCanvasPermission(): boolean {
+  try {
+    // 建立一個較大的 canvas 來模擬真實場景
+    const testCanvas = document.createElement('canvas');
+    testCanvas.width = 10;
+    testCanvas.height = 10;
+    const ctx = testCanvas.getContext('2d', { willReadFrequently: true });
+    
+    if (!ctx) return false;
+    
+    // 繪製測試圖案（模擬實際圖片處理）
+    ctx.fillStyle = 'rgb(255, 100, 50)';
+    ctx.fillRect(0, 0, 10, 10);
+    ctx.fillStyle = 'rgb(50, 100, 255)';
+    ctx.fillRect(2, 2, 6, 6);
+    
+    // 嘗試讀取完整畫素資料（這是 Pica 會做的）
+    const imageData = ctx.getImageData(0, 0, 10, 10);
+    
+    // 驗證資料完整性
+    if (!imageData || imageData.data.length !== 10 * 10 * 4) {
+      console.warn('Canvas getImageData 返回了不完整的資料');
+      return false;
+    }
+    
+    // 嘗試建立新的 ImageData 並寫回（Pica 的典型操作）
+    const newImageData = ctx.createImageData(10, 10);
+    for (let i = 0; i < newImageData.data.length; i++) {
+      newImageData.data[i] = imageData.data[i];
+    }
+    ctx.putImageData(newImageData, 0, 0);
+    
+    // 再次讀取驗證（確保完整的讀寫循環都能執行）
+    const verifyData = ctx.getImageData(0, 0, 10, 10);
+    if (!verifyData || verifyData.data.length === 0) {
+      return false;
+    }
+    
+    return true;
+  } catch (e) {
+    console.error('Canvas 存取被拒絕，可能是指紋保護已啟用:', e);
+    return false;
+  }
+}
+
+/**
  * 計算 Cover 模式的裁切區域（置中裁切，填滿目標尺寸）
  */
 function calculateCoverCrop(
@@ -301,7 +352,13 @@ export async function resizeImage(
         
         resolve(blob);
       } catch (error) {
-        reject(error);
+        // 檢查是否為 Pica 的指紋保護錯誤
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        if (errorMessage.includes('getImageData') || errorMessage.includes('fingerprinting')) {
+          reject(new Error('CANVAS_PERMISSION_DENIED'));
+        } else {
+          reject(error);
+        }
       }
     };
 
