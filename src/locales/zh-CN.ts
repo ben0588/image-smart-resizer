@@ -30,12 +30,13 @@ export const zhCN: Translation = {
     maintainAspectRatio: '锁定长宽比',
     toggleAspectRatio: '切换长宽比锁定',
     history: '历史',
-    format: '格式',
-    quality: '品质',
+    format: '输出格式',
+    quality: '压缩质量',
     smallerFile: '文件较小',
     bestQuality: '最佳品质',
-    download: '下载图片',
-    processing: '处理中...',
+    download: '下载图片',    close: '关闭',
+    rotateLeft: '向左旋转 90°',
+    rotateRight: '向右旋转 90°',    processing: '处理中...',
     applySize: '套用此尺寸',
     deleteHistory: '删除此历史',
     reset: '重置',
@@ -95,6 +96,10 @@ export const zhCN: Translation = {
     compressedSize: '压缩后',
     selected: '已选择',
     clickToEdit: '点击编辑设置',
+    noFilesProcessed: '没有成功处理的文件',
+    zipSuccess: '已打包 {count} 个文件为 ZIP 下载',
+    fileCountSingle: '{count} 个文件',
+    fileCountPlural: '{count} 个文件',
   },
 
   // Footer
@@ -102,6 +107,9 @@ export const zhCN: Translation = {
     copyright: '© 2026 Smart Resizer. 为创作者设计',
     privacyPolicy: '隐私权政策',
     createdBy: '作者：',
+    done: '完成',
+    effectiveDate: '生效日期：2026-01-06',
+    footerQuestions: '有任何问题？欢迎通过 GitHub 或 Email 联系我们。',
     privacyText: `
 <div class="space-y-6 text-slate-600">
   <section>
@@ -163,6 +171,31 @@ export const zhCN: Translation = {
     uploadFirst: '请先上传图片',
     processingFailed: '图片处理失败',
     readFileFailed: '读取文件失败',
+  },
+
+  // Canvas Permission
+  canvasPermission: {
+    title: '浏览器限制了图片处理',
+    description1: '为了保护您的隐私，我们在<strong>本地端</strong>运算图片而不上传服务器。',
+    description2: '但您的浏览器判定该行为具有风险，请暂时允许本站的权限。',
+    chooseBrowser: '如何解决？请选择您的浏览器：',
+    braveTitle: 'Brave 浏览器 (最常见)',
+    braveStep1: '点击地址栏右侧的 <span class="font-bold text-orange-600">狮子头图标</span>。',
+    braveStep2: '关闭上方的开关 (Shields DOWN)。',
+    braveStep3: '或者：点击 Advanced View，将 &quot;Block fingerprinting&quot; 改为 Disabled。',
+    firefoxTitle: 'Firefox 火狐',
+    firefoxStep1: '点击地址栏左侧的 <span class="font-bold text-purple-600">盾牌图标</span>。',
+    firefoxStep2: '关闭“增强型追踪保护”。',
+    firefoxStep3: '如果不想完全关闭，请至设置取消勾选“指纹追踪器 (Fingerprinters)”。',
+    safariTitle: 'Safari',
+    safariStep1: '打开“偏好设置” (Settings)。',
+    safariStep2: '切换到“隐私” (Privacy) 分页。',
+    safariStep3: '取消勾选“防止跨网站追踪”。',
+    chromeEdgeTitle: 'Chrome / Edge / 其他',
+    chromeEdgeDesc: 'Chrome 通常不会阻挡。如果您看到此信息，通常是因为安装了隐私扩展程序（例如 <strong>Privacy Badger</strong>, <strong>CanvasBlocker</strong>）。',
+    chromeEdgeAction: '请尝试暂停这些扩展程序后重试。',
+    cancel: '取消',
+    retry: '我已设置完成，重试',
   },
 
   // Languages

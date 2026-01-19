@@ -22,11 +22,40 @@ export function cn(...inputs: ClassValue[]): string {
  * @returns 格式化後的字串
  */
 export function formatFileSize(bytes: number): string {
+  // 處理無效值
+  if (bytes === null || bytes === undefined || isNaN(bytes) || bytes < 0) {
+    return '0 Bytes';
+  }
+  
   if (bytes === 0) return '0 Bytes';
+  
   const k = 1024;
   const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + ' ' + sizes[i];
+  
+  // 使用更穩定的計算方式，避免 Safari 下的浮點數精度問題
+  let i = 0;
+  let size = bytes;
+  
+  while (size >= k && i < sizes.length - 1) {
+    size /= k;
+    i++;
+  }
+  
+  // 根據數值大小決定小數位數
+  // 小於 10 顯示 2 位小數，小於 100 顯示 1 位小數，其他顯示整數
+  let formatted: string;
+  if (size < 10) {
+    formatted = size.toFixed(2);
+  } else if (size < 100) {
+    formatted = size.toFixed(1);
+  } else {
+    formatted = Math.round(size).toString();
+  }
+  
+  // 移除尾部的零（例如 1.00 -> 1, 1.50 -> 1.5）
+  formatted = parseFloat(formatted).toString();
+  
+  return formatted + ' ' + sizes[i];
 }
 
 /**

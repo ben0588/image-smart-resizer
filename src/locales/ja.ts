@@ -30,11 +30,14 @@ export const ja: Translation = {
     maintainAspectRatio: '縦横比を固定',
     toggleAspectRatio: '縦横比固定を切り替え',
     history: '履歴',
-    format: '形式',
-    quality: '品質',
+    format: '出力形式',
+    quality: '圧縮品質',
     smallerFile: 'ファイルサイズ小',
     bestQuality: '最高品質',
     download: '画像をダウンロード',
+    close: '閉じる',
+    rotateLeft: '左に 90° 回転',
+    rotateRight: '右に 90° 回転',
     processing: '処理中...',
     applySize: 'このサイズを適用',
     deleteHistory: 'この履歴を削除',
@@ -92,15 +95,18 @@ export const ja: Translation = {
     originalSize: '元のサイズ',
     compressedSize: '圧縮後',
     selected: '選択済み',
-    clickToEdit: 'クリックして設定を編集',
-  },
+    clickToEdit: 'クリックして設定を編集',    noFilesProcessed: '正常に処理されたファイルはありません',
+    zipSuccess: '{count} 個のファイルを ZIP としてまとめました',
+    fileCountSingle: '{count} 個のファイル',
+    fileCountPlural: '{count} 個のファイル',  },
 
   // Footer
   footer: {
     copyright: '© 2026 Smart Resizer. クリエイターのために設計',
     privacyPolicy: 'プライバシーポリシー',
-    createdBy: '作成者:',
-    privacyText: `
+    createdBy: '作成者:',    done: '完了',
+    effectiveDate: '施行日：2026-01-06',
+    footerQuestions: 'ご質問がありますか？GitHubまたはメールでお問い合わせください。',    privacyText: `
 <div class="space-y-6 text-slate-600">
   <section>
     <h4 class="text-lg font-bold text-slate-900 mb-2">核心的な約束：データ収集ゼロ</h4>
@@ -161,6 +167,31 @@ export const ja: Translation = {
     uploadFirst: '先に画像をアップロードしてください',
     processingFailed: '画像処理に失敗しました',
     readFileFailed: 'ファイルの読み込みに失敗しました',
+  },
+
+  // Canvas Permission
+  canvasPermission: {
+    title: 'ブラウザが画像処理を制限しました',
+    description1: 'プライバシー保護のため、画像はサーバーにアップロードせず<strong>ローカル</strong>で処理されます。',
+    description2: 'お使いのブラウザがこの動作をリスクとして判定したため、一時的に本サイトの権限を許可してください。',
+    chooseBrowser: '解決方法：お使いのブラウザを選択してください。',
+    braveTitle: 'Brave ブラウザ (推奨)',
+    braveStep1: 'アドレスバー右側の <span class="font-bold text-orange-600">ライオンアイコン</span> をクリックします。',
+    braveStep2: '上部のスイッチをオフにします (Shields DOWN)。',
+    braveStep3: 'または：Advanced View をクリックし、&quot;Block fingerprinting&quot; を Disabled に変更します。',
+    firefoxTitle: 'Firefox',
+    firefoxStep1: 'アドレスバー左側の <span class="font-bold text-purple-600">盾アイコン</span> をクリックします。',
+    firefoxStep2: '「強化型トラッキング防止」をオフにします。',
+    firefoxStep3: '完全にオフにしたくない場合は、設定から「フィンガープリンター (Fingerprinters)」のチェックを外してください。',
+    safariTitle: 'Safari',
+    safariStep1: '「設定」 (または環境設定) を開きます。',
+    safariStep2: '「プライバシー」 (Privacy) タブに切り替えます。',
+    safariStep3: '「サイト越えトラッキングを防ぐ」のチェックを外します。',
+    chromeEdgeTitle: 'Chrome / Edge / その他',
+    chromeEdgeDesc: 'Chrome は通常ブロックしません。このメッセージが表示される場合、通常はプライバシー拡張機能 (例：<strong>Privacy Badger</strong>, <strong>CanvasBlocker</strong>) が原因です。',
+    chromeEdgeAction: 'これらの拡張機能を一時停止してから再試行してください。',
+    cancel: 'キャンセル',
+    retry: '設定完了、再試行する',
   },
 
   // Languages

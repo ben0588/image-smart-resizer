@@ -65,7 +65,7 @@ export default function SmartResizer() {
       const completedFiles = state.batchFiles.filter((f) => f.status === 'completed');
 
       if (completedFiles.length === 0) {
-        toast.error('沒有成功處理的檔案');
+        toast.error(t.batch.noFilesProcessed);
         return;
       }
 
@@ -99,7 +99,7 @@ export default function SmartResizer() {
       // 批次模式一律打包成 ZIP（避免瀏覽器跳出多次下載權限通知）
       if (allDownloads.length > 0) {
         await downloadBatchAsZip(allDownloads, 'resized-images.zip');
-        toast.success(`已打包 ${allDownloads.length} 個檔案為 ZIP 下載`);
+        toast.success(t.batch.zipSuccess.replace('{count}', allDownloads.length.toString()));
       }
       return;
     }
@@ -264,7 +264,7 @@ export default function SmartResizer() {
                 {t.footer.privacyPolicy}
               </h3>
               <p className="text-xs text-slate-400 text-center mb-8 uppercase tracking-widest font-medium">
-                Effective Date: 2026-01-06
+                {t.footer.effectiveDate}
               </p>
               
               <div className="prose prose-slate max-w-none">
@@ -275,7 +275,7 @@ export default function SmartResizer() {
               </div>
               
               <div className="mt-8 pt-8 border-t border-slate-100 italic text-slate-400 text-xs text-center">
-                Questions? Contact us via GitHub or Email.
+                {t.footer.footerQuestions}
               </div>
             </div>
             
@@ -284,7 +284,7 @@ export default function SmartResizer() {
                 onClick={() => setIsPrivacyOpen(false)}
                 className="px-8 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
               >
-                Done
+                {t.footer.done}
               </button>
             </div>
           </div>

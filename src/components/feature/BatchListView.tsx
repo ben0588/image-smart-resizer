@@ -204,7 +204,9 @@ export function BatchListView({
       {/* 標題列 */}
       <div className="px-4 py-3 bg-white border-b border-slate-200 flex items-center justify-between">
         <h3 className="text-sm font-semibold text-slate-700">
-          {files.length} {files.length === 1 ? 'file' : 'files'}
+          {files.length === 1 
+            ? t.batch.fileCountSingle.replace('{count}', files.length.toString())
+            : t.batch.fileCountPlural.replace('{count}', files.length.toString())}
         </h3>
         <button
           onClick={() => fileInputRef.current?.click()}

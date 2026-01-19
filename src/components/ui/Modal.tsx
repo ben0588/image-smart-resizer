@@ -7,6 +7,7 @@
 
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { useTranslation } from '@/src/hooks/useTranslation';
 
 interface ModalProps {
   isOpen: boolean;
@@ -16,6 +17,7 @@ interface ModalProps {
 }
 
 export function Modal({ isOpen, onClose, children, title }: ModalProps) {
+  const { t } = useTranslation();
   // ESC 鍵關閉
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
@@ -53,7 +55,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
             <button
               onClick={onClose}
               className="p-2 hover:bg-slate-100 rounded-full transition-colors"
-              aria-label="關閉"
+              aria-label={t.controls.close}
             >
               <X className="w-5 h-5 text-slate-600" />
             </button>
@@ -70,7 +72,7 @@ export function Modal({ isOpen, onClose, children, title }: ModalProps) {
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 bg-black/50 hover:bg-black/70 text-white rounded-full transition-colors"
-            aria-label="關閉"
+            aria-label={t.controls.close}
           >
             <X className="w-5 h-5" />
           </button>

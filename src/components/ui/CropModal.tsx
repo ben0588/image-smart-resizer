@@ -184,7 +184,7 @@ export function CropModal({
                 w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 
                 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all cursor-pointer
               "
-              title="向左旋轉 90°"
+              title={t.controls.rotateLeft}
             >
               <RotateCcwSquare className="w-4.5 h-4.5" />
             </button>
@@ -196,7 +196,7 @@ export function CropModal({
                 w-9 h-9 flex items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 
                 hover:bg-slate-50 hover:text-indigo-600 hover:border-indigo-200 active:scale-95 transition-all cursor-pointer
               "
-              title="向右旋轉 90°"
+              title={t.controls.rotateRight}
             >
               <RotateCwSquare className="w-4.5 h-4.5" />
             </button>

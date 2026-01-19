@@ -260,7 +260,7 @@ export default function ControlPanel({
               }`}
             >
               <ImageLucide className="w-3 h-3" />
-              <span>原始</span>
+              <span>{t.controls.aspectOriginal}</span>
             </button>
             
             {[

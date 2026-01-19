@@ -30,11 +30,14 @@ export const zhTW: Translation = {
     maintainAspectRatio: '鎖定長寬比',
     toggleAspectRatio: '切換長寬比鎖定',
     history: '歷史',
-    format: '格式',
-    quality: '品質',
+    format: '輸出格式',
+    quality: '壓縮品質',
     smallerFile: '檔案較小',
     bestQuality: '最佳品質',
     download: '下載圖片',
+    close: '關閉',
+    rotateLeft: '向左旋轉 90°',
+    rotateRight: '向右旋轉 90°',
     processing: '處理中...',
     applySize: '套用此尺寸',
     deleteHistory: '刪除此歷史',
@@ -95,6 +98,10 @@ export const zhTW: Translation = {
     compressedSize: '壓縮後',
     selected: '已選擇',
     clickToEdit: '點擊編輯設定',
+    noFilesProcessed: '沒有成功處理的檔案',
+    zipSuccess: '已打包 {count} 個檔案為 ZIP 下載',
+    fileCountSingle: '{count} 個檔案',
+    fileCountPlural: '{count} 個檔案',
   },
 
   // Footer
@@ -102,6 +109,9 @@ export const zhTW: Translation = {
     copyright: '© 2026 Smart Resizer. 為創作者設計',
     privacyPolicy: '隱私權政策',
     createdBy: '作者：',
+    done: '完成',
+    effectiveDate: '生效日期：2026-01-06',
+    footerQuestions: '有任何問題？歡迎透過 GitHub 或 Email 聯繫我們。',
     privacyText: `
 <div class="space-y-6 text-slate-600">
   <section>
@@ -163,6 +173,31 @@ export const zhTW: Translation = {
     uploadFirst: '請先上傳圖片',
     processingFailed: '圖片處理失敗',
     readFileFailed: '讀取檔案失敗',
+  },
+
+  // Canvas Permission
+  canvasPermission: {
+    title: '瀏覽器限制了圖片處理',
+    description1: '為了保護您的隱私，我們在<strong>本地端</strong>運算圖片而不上傳伺服器。',
+    description2: '但您的瀏覽器判定該行為具有風險，請暫時允許本站的權限。',
+    chooseBrowser: '如何解決？請選擇您的瀏覽器：',
+    braveTitle: 'Brave 瀏覽器 (最常見)',
+    braveStep1: '點擊網址列右側的 <span class="font-bold text-orange-600">獅子頭圖示</span>。',
+    braveStep2: '關閉上方的開關 (Shields DOWN)。',
+    braveStep3: '或者：點擊 Advanced View，將 &quot;Block fingerprinting&quot; 改為 Disabled。',
+    firefoxTitle: 'Firefox 火狐',
+    firefoxStep1: '點擊網址列左側的 <span class="font-bold text-purple-600">盾牌圖示</span>。',
+    firefoxStep2: '關閉「增強型追蹤保護」。',
+    firefoxStep3: '如果不想完全關閉，請至設定取消勾選「指紋追蹤器 (Fingerprinters)」。',
+    safariTitle: 'Safari',
+    safariStep1: '打開「偏好設定」 (Settings)。',
+    safariStep2: '切換到「隱私權」 (Privacy) 分頁。',
+    safariStep3: '取消勾選「防止跨網站追蹤」。',
+    chromeEdgeTitle: 'Chrome / Edge / 其他',
+    chromeEdgeDesc: 'Chrome 通常不會阻擋。如果您看到此訊息，通常是因為安裝了隱私擴充套件（例如 <strong>Privacy Badger</strong>, <strong>CanvasBlocker</strong>）。',
+    chromeEdgeAction: '請嘗試暫停這些套件後重試。',
+    cancel: '取消',
+    retry: '我已設定完成，重試',
   },
 
   // Languages

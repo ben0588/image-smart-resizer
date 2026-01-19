@@ -30,12 +30,13 @@ export const ko: Translation = {
     maintainAspectRatio: '종횡비 고정',
     toggleAspectRatio: '종횡비 고정 전환',
     history: '기록',
-    format: '형식',
-    quality: '품질',
+    format: '출력 형식',
+    quality: '압축 품질',
     smallerFile: '파일 작게',
     bestQuality: '최고 품질',
-    download: '이미지 다운로드',
-    processing: '처리 중...',
+    download: '이미지 다운로드',    close: '닫기',
+    rotateLeft: '왼쪽으로 90° 회전',
+    rotateRight: '오른쪽으로 90° 회전',    processing: '처리 중...',
     applySize: '이 크기 적용',
     deleteHistory: '이 기록 삭제',
     reset: '리셋',
@@ -95,6 +96,10 @@ export const ko: Translation = {
     compressedSize: '압축 후',
     selected: '선택됨',
     clickToEdit: '클릭하여 설정 편집',
+    noFilesProcessed: '성공적으로 처리된 파일이 없습니다',
+    zipSuccess: '{count}개의 파일을 ZIP으로 압축하여 다운로드합니다',
+    fileCountSingle: '{count}개의 파일',
+    fileCountPlural: '{count}개의 파일',
   },
 
   // Footer
@@ -102,6 +107,9 @@ export const ko: Translation = {
     copyright: '© 2026 Smart Resizer. 크리에이터를 위해 설계',
     privacyPolicy: '개인정보 처리방침',
     createdBy: '제작자:',
+    done: '완료',
+    effectiveDate: '시행일: 2026-01-06',
+    footerQuestions: '궁금한 점이 있으신가요? GitHub 또는 이메일로 문의해 주세요.',
     privacyText: `
 <div class="space-y-6 text-slate-600">
   <section>
@@ -163,6 +171,31 @@ export const ko: Translation = {
     uploadFirst: '먼저 이미지를 업로드하세요',
     processingFailed: '이미지 처리 실패',
     readFileFailed: '파일 읽기 실패',
+  },
+
+  // Canvas Permission
+  canvasPermission: {
+    title: '브라우저가 이미지 처리를 제한했습니다',
+    description1: '개인정보 보호를 위해 이미지는 서버에 업로드하지 않고 <strong>로컬</strong>에서 처리됩니다.',
+    description2: '하지만 브라우저에서 이 동작을 위험한 것으로 판단했으므로, 일시적으로 이 사이트의 권한을 허용해 주세요.',
+    chooseBrowser: '해결 방법: 사용 중인 브라우저를 선택하세요.',
+    braveTitle: 'Brave 브라우저 (권장)',
+    braveStep1: '주소창 오른쪽의 <span class="font-bold text-orange-600">사자 아이콘</span>을 클릭합니다.',
+    braveStep2: '상단 스위치를 끕니다 (Shields DOWN).',
+    braveStep3: '또는: Advanced View를 클릭하고 &quot;Block fingerprinting&quot;을 Disabled로 변경합니다.',
+    firefoxTitle: 'Firefox',
+    firefoxStep1: '주소창 왼쪽의 <span class="font-bold text-purple-600">방패 아이콘</span>을 클릭합니다.',
+    firefoxStep2: '「항상 강화된 추적 방지」를 끕니다.',
+    firefoxStep3: '완전히 끄고 싶지 않다면 설정에서 「핑거프린터 (Fingerprinters)」 체크를 해제하세요.',
+    safariTitle: 'Safari',
+    safariStep1: '「설정」 (또는 환경설정)을 엽니다.',
+    safariStep2: '「개인정보 보호」 (Privacy) 탭으로 이동합니다.',
+    safariStep3: '「크로스 사이트 추적 방지」 체크를 해제합니다.',
+    chromeEdgeTitle: 'Chrome / Edge / 기타',
+    chromeEdgeDesc: 'Chrome은 보통 차단하지 않습니다. 이 메시지가 표시된다면 보통 보안 확장 프로그램(예: <strong>Privacy Badger</strong>, <strong>CanvasBlocker</strong>) 때문입니다.',
+    chromeEdgeAction: '이러한 확장 프로그램을 일시 중지한 후 다시 시도해 보세요.',
+    cancel: '취소',
+    retry: '설정 완료, 다시 시도',
   },
 
   // Languages
