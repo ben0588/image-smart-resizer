@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertTriangle, ChevronDown, ChevronUp, ShieldAlert, X } from 'lucide-react';
+import { ChevronDown, ChevronUp, ShieldAlert } from 'lucide-react';
 import { Button } from './Button'; // 假設你有的元件
 
 interface PermissionModalProps {
@@ -46,7 +46,6 @@ export function CanvasPermissionModal({ isOpen, onClose, onRetry }: PermissionMo
           <div className="space-y-2">
             {/* Brave */}
             <InstructionItem 
-              id="brave" 
               title="Brave 瀏覽器 (最常見)" 
               isOpen={openBrowser === 'brave'} 
               onClick={() => toggleBrowser('brave')}
@@ -54,13 +53,12 @@ export function CanvasPermissionModal({ isOpen, onClose, onRetry }: PermissionMo
               <ol className="list-decimal list-inside space-y-1 text-sm text-gray-600 dark:text-gray-300">
                 <li>點擊網址列右側的 <span className="font-bold text-orange-600">獅子頭圖示</span>。</li>
                 <li>關閉上方的開關 (Shields DOWN)。</li>
-                <li>或者：點擊 Advanced View，將 "Block fingerprinting" 改為 Disabled。</li>
+                <li>或者：點擊 Advanced View，將 &quot;Block fingerprinting&quot; 改為 Disabled。</li>
               </ol>
             </InstructionItem>
 
             {/* Firefox */}
             <InstructionItem 
-              id="firefox" 
               title="Firefox 火狐" 
               isOpen={openBrowser === 'firefox'} 
               onClick={() => toggleBrowser('firefox')}
@@ -74,7 +72,6 @@ export function CanvasPermissionModal({ isOpen, onClose, onRetry }: PermissionMo
 
             {/* Safari */}
             <InstructionItem 
-              id="safari" 
               title="Safari" 
               isOpen={openBrowser === 'safari'} 
               onClick={() => toggleBrowser('safari')}
@@ -88,7 +85,6 @@ export function CanvasPermissionModal({ isOpen, onClose, onRetry }: PermissionMo
             
             {/* Chrome / Edge */}
             <InstructionItem 
-              id="chrome" 
               title="Chrome / Edge / 其他" 
               isOpen={openBrowser === 'chrome'} 
               onClick={() => toggleBrowser('chrome')}
@@ -118,14 +114,13 @@ export function CanvasPermissionModal({ isOpen, onClose, onRetry }: PermissionMo
 
 // 輔助元件：手風琴項目
 interface InstructionItemProps {
-  id: string;
   title: string;
   children: React.ReactNode;
   isOpen: boolean;
   onClick: () => void;
 }
 
-function InstructionItem({ id, title, children, isOpen, onClick }: InstructionItemProps) {
+function InstructionItem({ title, children, isOpen, onClick }: InstructionItemProps) {
   return (
     <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
       <button
