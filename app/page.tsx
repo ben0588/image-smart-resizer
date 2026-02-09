@@ -4,22 +4,22 @@
  * 設計理念：高效、純淨、隱私
  */
 
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { Layers, ShieldCheck, Github } from 'lucide-react';
-import { toast } from 'react-toastify';
-import useAppStore from '@/src/store/use-app-store';
-import { downloadImage, downloadBatchAsZip } from '@/src/lib/engine/processor';
-import { replaceExtension } from '@/src/lib/utils';
-import { useTranslation } from '@/src/hooks/useTranslation';
-import UploadZone from '@/src/components/feature/UploadZone';
-import ControlPanel from '@/src/components/feature/ControlPanel';
-import ImagePreview from '@/src/components/feature/ImagePreview';
-import { BatchPreview } from '@/src/components/feature/BatchPreview';
-import { LanguageSelector } from '@/src/components/feature/LanguageSelector';
-import { Modal } from '@/src/components/ui/Modal';
-import { CanvasPermissionModal } from '@/src/components/ui/CanvasPermissionModal';
+import React, { useState } from "react";
+import { Layers, ShieldCheck, Github } from "lucide-react";
+import { toast } from "react-toastify";
+import useAppStore from "@/src/store/use-app-store";
+import { downloadImage, downloadBatchAsZip } from "@/src/lib/engine/processor";
+import { replaceExtension } from "@/src/lib/utils";
+import { useTranslation } from "@/src/hooks/useTranslation";
+import UploadZone from "@/src/components/feature/UploadZone";
+import ControlPanel from "@/src/components/feature/ControlPanel";
+import ImagePreview from "@/src/components/feature/ImagePreview";
+import { BatchPreview } from "@/src/components/feature/BatchPreview";
+import { LanguageSelector } from "@/src/components/feature/LanguageSelector";
+import { Modal } from "@/src/components/ui/Modal";
+import { CanvasPermissionModal } from "@/src/components/ui/CanvasPermissionModal";
 
 export default function SmartResizer() {
   const { t } = useTranslation();
@@ -60,9 +60,11 @@ export default function SmartResizer() {
     // 批次模式
     if (isBatchMode) {
       await processBatch();
-      
+
       const state = useAppStore.getState();
-      const completedFiles = state.batchFiles.filter((f) => f.status === 'completed');
+      const completedFiles = state.batchFiles.filter(
+        (f) => f.status === "completed",
+      );
 
       if (completedFiles.length === 0) {
         toast.error(t.batch.noFilesProcessed);
@@ -78,9 +80,9 @@ export default function SmartResizer() {
           item.resultVariants.forEach((variant) => {
             const filename = replaceExtension(
               item.file.name,
-              'image/png',
+              "image/png",
               variant.width,
-              variant.height
+              variant.height,
             );
             allDownloads.push({ blob: variant.blob, filename });
           });
@@ -90,7 +92,7 @@ export default function SmartResizer() {
             item.file.name,
             config.format,
             config.width,
-            config.height
+            config.height,
           );
           allDownloads.push({ blob: item.resultBlob, filename });
         }
@@ -98,8 +100,10 @@ export default function SmartResizer() {
 
       // 批次模式一律打包成 ZIP（避免瀏覽器跳出多次下載權限通知）
       if (allDownloads.length > 0) {
-        await downloadBatchAsZip(allDownloads, 'resized-images.zip');
-        toast.success(t.batch.zipSuccess.replace('{count}', allDownloads.length.toString()));
+        await downloadBatchAsZip(allDownloads, "resized-images.zip");
+        toast.success(
+          t.batch.zipSuccess.replace("{count}", allDownloads.length.toString()),
+        );
       }
       return;
     }
@@ -115,43 +119,42 @@ export default function SmartResizer() {
         sourceFile.name,
         config.format,
         config.width,
-        config.height
+        config.height,
       );
       downloadImage(state.resultBlob, newFilename);
-      
+
       // 顯示成功提示
-      toast.success(t.controls.download + ' ✓');
+      toast.success(t.controls.downloadStarted);
     }
   };
 
   // 判斷是否顯示編輯器
   const showEditor = sourceFile !== null || isBatchMode;
 
-
   // json-ld 結構化資料
   const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'WebApplication',
-    name: 'Image Smart Resizer',
-    url: 'https://image-smart-resizer.vercel.app',
-    applicationCategory: 'MultimediaApplication',
-    operatingSystem: 'Any',
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    name: "Image Smart Resizer",
+    url: "https://image-smart-resizer.vercel.app",
+    applicationCategory: "MultimediaApplication",
+    operatingSystem: "Any",
     offers: {
-      '@type': 'Offer',
-      price: '0',
-      priceCurrency: 'USD',
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "USD",
     },
     featureList: [
-      'Batch Image Resizing',
-      'Privacy-focused (Client-side processing)',
-      'Convert JPG/PNG/WebP/ICO',
-      'SVG to PNG Converter'
+      "Batch Image Resizing",
+      "Privacy-focused (Client-side processing)",
+      "Convert JPG/PNG/WebP/ICO",
+      "SVG to PNG Converter",
     ],
-    browserRequirements: 'Requires JavaScript. Works in all modern browsers.',
+    browserRequirements: "Requires JavaScript. Works in all modern browsers.",
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-700 pb-20">
+    <div className="min-h-screen bg-slate-50 pb-20 font-sans text-slate-900 selection:bg-indigo-100 selection:text-indigo-700">
       {/* 語言選擇器 */}
       <LanguageSelector />
 
@@ -159,20 +162,20 @@ export default function SmartResizer() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      
+
       {/* Main Container */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+      <div className="mx-auto max-w-5xl px-4 pt-12 sm:px-6 lg:px-8">
         {/* Header */}
         <header className="mb-8 flex items-center justify-between">
           <div className="flex items-center gap-3 select-none">
-            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
-              <Layers className="text-white w-6 h-6" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-600 shadow-lg shadow-indigo-500/20">
+              <Layers className="h-6 w-6 text-white" />
             </div>
             <div>
-              <h1 className="text-xl font-bold tracking-tight text-slate-900 leading-tight">
+              <h1 className="text-xl leading-tight font-bold tracking-tight text-slate-900">
                 {t.title}
               </h1>
-              <p className="text-xs text-slate-500 font-medium tracking-wide uppercase">
+              <p className="text-xs font-medium tracking-wide text-slate-500 uppercase">
                 {t.subtitle}
               </p>
             </div>
@@ -180,13 +183,16 @@ export default function SmartResizer() {
         </header>
 
         {/* 核心卡片區塊 */}
-        <main className="bg-white rounded-2xl shadow-xl shadow-slate-200/60 border border-slate-100 overflow-hidden transition-all duration-500">
+        <main className="overflow-hidden rounded-2xl border border-slate-100 bg-white shadow-xl shadow-slate-200/60 transition-all duration-500">
           {/* 上傳區 */}
           {!showEditor && <UploadZone onFileSelect={setSourceFile} />}
 
           {/* 編輯器 */}
           {showEditor && (
-            <div className="grid grid-cols-1 lg:grid-cols-12" style={{minHeight: '600px'}}>
+            <div
+              className="grid grid-cols-1 lg:grid-cols-12"
+              style={{ minHeight: "600px" }}
+            >
               {/* Left: 圖片預覽 */}
               {isBatchMode ? (
                 <BatchPreview
@@ -220,28 +226,28 @@ export default function SmartResizer() {
         </main>
 
         {/* Footer */}
-        <footer className="mt-12 py-8 border-t border-slate-100">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-slate-400 text-sm">
+        <footer className="mt-12 border-t border-slate-100 py-8">
+          <div className="flex flex-col items-center justify-between gap-4 text-sm text-slate-400 md:flex-row">
             <p className="font-medium">{t.footer.copyright}</p>
-            
+
             <div className="flex items-center gap-6">
-              <button 
+              <button
                 onClick={() => setIsPrivacyOpen(true)}
-                className="flex items-center gap-1.5 hover:text-indigo-600 transition-colors cursor-pointer border-none bg-transparent"
+                className="flex cursor-pointer items-center gap-1.5 border-none bg-transparent transition-colors hover:text-indigo-600"
               >
-                <ShieldCheck className="w-4 h-4" />
+                <ShieldCheck className="h-4 w-4" />
                 <span>{t.footer.privacyPolicy}</span>
               </button>
-              
-              <div className="flex items-center gap-1.5 grayscale hover:grayscale-0 transition-all">
+
+              <div className="flex items-center gap-1.5 grayscale transition-all hover:grayscale-0">
                 <span>{t.footer.createdBy}</span>
-                <a 
-                  href="https://github.com/ben0588" 
-                  target="_blank" 
+                <a
+                  href="https://github.com/ben0588"
+                  target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 font-bold text-slate-600 hover:text-black no-underline"
+                  className="flex items-center gap-1 font-bold text-slate-600 no-underline hover:text-black"
                 >
-                  <Github className="w-4 h-4" />
+                  <Github className="h-4 w-4" />
                   GitHub
                 </a>
               </div>
@@ -250,39 +256,39 @@ export default function SmartResizer() {
         </footer>
 
         {/* Privacy Policy Modal */}
-        <Modal 
-          isOpen={isPrivacyOpen} 
+        <Modal
+          isOpen={isPrivacyOpen}
           onClose={() => setIsPrivacyOpen(false)}
           title={t.footer.privacyPolicy}
         >
-          <div className="flex flex-col max-h-[70vh]">
-            <div className="px-8  overflow-y-auto custom-scrollbar">
-              <div className="w-16 h-16 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mb-6 mx-auto">
-                <ShieldCheck className="w-8 h-8" />
+          <div className="flex max-h-[70vh] flex-col">
+            <div className="custom-scrollbar overflow-y-auto px-8">
+              <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+                <ShieldCheck className="h-8 w-8" />
               </div>
-              <h3 className="text-2xl font-bold text-slate-900 text-center mb-2">
+              <h3 className="mb-2 text-center text-2xl font-bold text-slate-900">
                 {t.footer.privacyPolicy}
               </h3>
-              <p className="text-xs text-slate-400 text-center mb-8 uppercase tracking-widest font-medium">
+              <p className="mb-8 text-center text-xs font-medium tracking-widest text-slate-400 uppercase">
                 {t.footer.effectiveDate}
               </p>
-              
+
               <div className="prose prose-slate max-w-none">
-                <div 
-                  className="text-slate-600 leading-relaxed text-sm md:text-base"
+                <div
+                  className="text-sm leading-relaxed text-slate-600 md:text-base"
                   dangerouslySetInnerHTML={{ __html: t.footer.privacyText }}
                 />
               </div>
-              
-              <div className="mt-8 pt-8 border-t border-slate-100 italic text-slate-400 text-xs text-center">
+
+              <div className="mt-8 border-t border-slate-100 pt-8 text-center text-xs text-slate-400 italic">
                 {t.footer.footerQuestions}
               </div>
             </div>
-            
-            <div className="py-4 bg-slate-50 border-t border-slate-100 flex justify-center">
-              <button 
+
+            <div className="flex justify-center border-t border-slate-100 bg-slate-50 py-4">
+              <button
                 onClick={() => setIsPrivacyOpen(false)}
-                className="px-8 py-2.5 bg-slate-900 text-white rounded-xl font-bold hover:bg-black transition-all hover:scale-105 active:scale-95 shadow-lg shadow-slate-200"
+                className="rounded-xl bg-slate-900 px-8 py-2.5 font-bold text-white shadow-lg shadow-slate-200 transition-all hover:scale-105 hover:bg-black active:scale-95"
               >
                 {t.footer.done}
               </button>
@@ -291,7 +297,7 @@ export default function SmartResizer() {
         </Modal>
 
         {/* Canvas Permission Tutorial Modal */}
-        <CanvasPermissionModal 
+        <CanvasPermissionModal
           isOpen={showCanvasPermissionModal}
           onClose={() => setShowCanvasPermissionModal(false)}
           onRetry={handleRetry}

@@ -6,18 +6,24 @@
  * 設計理念：Gestalt Proximity + Visual Anchor
  */
 
-'use client';
+"use client";
 
-import React, { useState, useRef } from 'react';
-import { Loader2, X, Eye, Plus, Download, Scissors } from 'lucide-react';
-import type { BatchFileItem, CropData } from '@/src/types';
-import { useTranslation } from '@/src/hooks/useTranslation';
-import { downloadImage, resizeImage, createPreviewURL, revokePreviewURL } from '@/src/lib/engine/processor';
-import { replaceExtension, validateImageFile } from '@/src/lib/utils';
-import { Modal } from '@/src/components/ui/Modal';
-import { CropModal } from '@/src/components/ui/CropModal';
-import useAppStore from '@/src/store/use-app-store';
-import { BatchListView } from './BatchListView';
+import React, { useState, useRef } from "react";
+import { Loader2, X, Eye, Plus, Download, Scissors } from "lucide-react";
+import type { BatchFileItem, CropData } from "@/src/types";
+import { useTranslation } from "@/src/hooks/useTranslation";
+import {
+  downloadImage,
+  resizeImage,
+  createPreviewURL,
+  revokePreviewURL,
+  loadWatermarkDataUrl,
+} from "@/src/lib/engine/processor";
+import { replaceExtension, validateImageFile } from "@/src/lib/utils";
+import { Modal } from "@/src/components/ui/Modal";
+import { CropModal } from "@/src/components/ui/CropModal";
+import useAppStore from "@/src/store/use-app-store";
+import { BatchListView } from "./BatchListView";
 
 interface BatchPreviewProps {
   files: BatchFileItem[];
@@ -25,7 +31,11 @@ interface BatchPreviewProps {
   onRemove: (id: string) => void;
 }
 
-export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProps) {
+export function BatchPreview({
+  files,
+  isProcessing,
+  onRemove,
+}: BatchPreviewProps) {
   const { t } = useTranslation();
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [isPreviewLoading, setIsPreviewLoading] = useState(false);
@@ -36,16 +46,29 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
   const selectedFileId = useAppStore((s) => s.selectedFileId);
   const selectFile = useAppStore((s) => s.selectFile);
   const setCropForFile = useAppStore((s) => s.setCropForFile);
+  const watermark = useAppStore((s) => s.watermark);
 
   // 取得要裁切的檔案
   const cropFile = cropFileId ? files.find((f) => f.id === cropFileId) : null;
 
-  // 處理預覽圖片 - 執行 Pica 處理後顯示最終效果
+  // 處理預覽圖片 - 執行 Pica 處理後顯示最終效果（含浮水印）
   const handlePreviewClick = async (item: BatchFileItem) => {
     setIsPreviewLoading(true);
     // 先設一個暫態以顯示 loading modal
-    setPreviewImage('loading');
+    setPreviewImage("loading");
     try {
+      // 建構浮水印參數
+      const watermarkOpt = watermark.file
+        ? {
+            imageData: await loadWatermarkDataUrl(watermark.file),
+            position: watermark.position,
+            size: watermark.size,
+            margin: watermark.margin,
+            opacity: 1 - watermark.opacity, // 透明度轉不透明度
+            customPosition: watermark.customPosition,
+          }
+        : undefined;
+
       const blob = await resizeImage(item.file, {
         width: config.width,
         height: config.height,
@@ -54,12 +77,13 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
         fitMode: config.fitMode,
         customCrop: item.customCrop,
         rotation: item.cropData?.rotation ?? 0,
+        watermark: watermarkOpt,
       });
-      
+
       const previewUrl = createPreviewURL(blob);
       setPreviewImage(previewUrl);
     } catch (error) {
-      console.error('預覽處理失敗:', error);
+      console.error("預覽處理失敗:", error);
       setPreviewImage(item.previewUrl);
     } finally {
       setIsPreviewLoading(false);
@@ -68,7 +92,11 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
 
   // 關閉預覽時清理 URL
   const handleClosePreview = () => {
-    if (previewImage && previewImage !== 'loading' && !files.some(f => f.previewUrl === previewImage)) {
+    if (
+      previewImage &&
+      previewImage !== "loading" &&
+      !files.some((f) => f.previewUrl === previewImage)
+    ) {
       revokePreviewURL(previewImage);
     }
     setPreviewImage(null);
@@ -99,7 +127,7 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
       }
     }
     // 重置 input 以允許重複選擇相同檔案
-    if (e.target) e.target.value = '';
+    if (e.target) e.target.value = "";
   };
 
   // 2 張或以上圖片時，桌面版使用清單模式
@@ -108,7 +136,7 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
     return (
       <>
         {/* 桌面版：清單模式 */}
-        <div className="hidden lg:block lg:col-span-8 h-full">
+        <div className="hidden h-full lg:col-span-8 lg:block">
           <BatchListView
             files={files}
             isProcessing={isProcessing}
@@ -119,7 +147,7 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
         </div>
 
         {/* 手機版：卡片模式 */}
-        <div className="lg:hidden col-span-full">
+        <div className="col-span-full lg:hidden">
           <MobileCardView
             files={files}
             isProcessing={isProcessing}
@@ -148,6 +176,7 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
             initialCropData={cropFile.cropData}
             onConfirm={handleCropConfirm}
             onCancel={() => setCropFileId(null)}
+            watermark={watermark}
           />
         )}
       </>
@@ -184,6 +213,7 @@ export function BatchPreview({ files, isProcessing, onRemove }: BatchPreviewProp
           initialCropData={cropFile.cropData}
           onConfirm={handleCropConfirm}
           onCancel={() => setCropFileId(null)}
+          watermark={watermark}
         />
       )}
     </>
@@ -206,7 +236,7 @@ interface MobileCardViewProps {
   onCropClick: (id: string) => void;
   onCropReset: (id: string) => void;
   fitMode: string;
-  t: ReturnType<typeof useTranslation>['t'];
+  t: ReturnType<typeof useTranslation>["t"];
 }
 
 function MobileCardView({
@@ -227,7 +257,7 @@ function MobileCardView({
   t,
 }: MobileCardViewProps) {
   return (
-    <div className="lg:col-span-8 bg-slate-100/50 border-b lg:border-b-0 lg:border-r border-slate-200 h-full overflow-y-auto scrollbar-hide">
+    <div className="scrollbar-hide h-full overflow-y-auto border-b border-slate-200 bg-slate-100/50 lg:col-span-8 lg:border-r lg:border-b-0">
       {/* 隱藏的檔案輸入 */}
       <input
         ref={fileInputRef}
@@ -242,36 +272,36 @@ function MobileCardView({
       <Modal isOpen={previewImage !== null} onClose={onClosePreview}>
         {isPreviewLoading ? (
           <div className="flex items-center justify-center p-12">
-            <Loader2 className="w-8 h-8 animate-spin text-indigo-600" />
+            <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
           </div>
-        ) : previewImage && previewImage !== 'loading' ? (
+        ) : previewImage && previewImage !== "loading" ? (
           /* eslint-disable-next-line @next/next/no-img-element */
           <img
             src={previewImage}
             alt="Preview"
-            className="w-full h-auto max-h-[70vh] object-contain"
+            className="h-auto max-h-[70vh] w-full object-contain"
           />
         ) : null}
       </Modal>
 
       <div className="p-6">
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
           {/* 圖片卡片 */}
           {files.map((item) => {
             const isSelected = selectedFileId === item.id;
-            
+
             return (
               <div
                 key={item.id}
                 onClick={() => onSelect(item.id)}
-                className={`group relative aspect-video rounded-xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all cursor-pointer ${
+                className={`group relative aspect-video cursor-pointer overflow-hidden rounded-xl border bg-white shadow-sm transition-all hover:shadow-md ${
                   isSelected
-                    ? 'ring-2 ring-indigo-500'
-                    : item.status === 'completed'
-                    ? 'ring-2 ring-green-500'
-                    : item.status === 'error'
-                    ? 'ring-2 ring-red-500'
-                    : 'ring-2 ring-transparent hover:ring-indigo-500'
+                    ? "ring-2 ring-indigo-500"
+                    : item.status === "completed"
+                      ? "ring-2 ring-green-500"
+                      : item.status === "error"
+                        ? "ring-2 ring-red-500"
+                        : "ring-2 ring-transparent hover:ring-indigo-500"
                 }`}
               >
                 {/* 圖片 */}
@@ -284,127 +314,142 @@ function MobileCardView({
 
                 {/* 選中指示器 */}
                 {isSelected && (
-                  <div className="absolute top-2 left-2 bg-indigo-600 text-white text-[10px] px-2 py-0.5 rounded shadow">
+                  <div className="absolute top-2 left-2 rounded bg-indigo-600 px-2 py-0.5 text-[10px] text-white shadow">
                     {t.batch.selected}
                   </div>
                 )}
 
                 {/* Hover 遮罩 - 個別控制 */}
-                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                  {!isProcessing && item.status === 'pending' && (
+                <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/40 opacity-0 transition-opacity group-hover:opacity-100">
+                  {!isProcessing && item.status === "pending" && (
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         onRemove(item.id);
                       }}
-                      className="p-2 bg-white/90 hover:bg-red-500 hover:text-white rounded-full transition-colors cursor-pointer"
+                      className="cursor-pointer rounded-full bg-white/90 p-2 transition-colors hover:bg-red-500 hover:text-white"
                       title={t.batch.remove}
                     >
-                      <X className="w-4 h-4" />
+                      <X className="h-4 w-4" />
                     </button>
                   )}
                   {/* 裁切按鈕 */}
-                  {!isProcessing && item.status === 'pending' && fitMode === 'cover' && (
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onCropClick(item.id);
-                        }}
-                        className={`p-2 rounded-full transition-colors cursor-pointer ${
-                          item.cropData 
-                            ? 'bg-indigo-500 text-white hover:bg-indigo-600' 
-                            : 'bg-white/90 hover:bg-blue-500 hover:text-white'
-                        }`}
-                        title={item.cropData ? t.controls.cropModified : t.controls.aspectCrop}
-                      >
-                        <Scissors className={`w-4 h-4 ${item.cropData ? 'stroke-[2.5]' : ''}`} />
-                      </button>
-                      {/* 重置裁切按鈕 */}
-                      {item.cropData && (
+                  {!isProcessing &&
+                    item.status === "pending" &&
+                    fitMode === "cover" && (
+                      <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
-                            onCropReset(item.id);
+                            onCropClick(item.id);
                           }}
-                          className="p-1.5 bg-white/90 hover:bg-red-500 hover:text-white text-slate-500 rounded-full transition-colors cursor-pointer"
-                          title={t.controls.cropReset}
+                          className={`cursor-pointer rounded-full p-2 transition-colors ${
+                            item.cropData
+                              ? "bg-indigo-500 text-white hover:bg-indigo-600"
+                              : "bg-white/90 hover:bg-blue-500 hover:text-white"
+                          }`}
+                          title={
+                            item.cropData
+                              ? t.controls.cropModified
+                              : t.controls.aspectCrop
+                          }
                         >
-                          <X className="w-3 h-3" />
+                          <Scissors
+                            className={`h-4 w-4 ${item.cropData ? "stroke-[2.5]" : ""}`}
+                          />
                         </button>
-                      )}
-                    </div>
-                  )}
+                        {/* 重置裁切按鈕 */}
+                        {item.cropData && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onCropReset(item.id);
+                            }}
+                            className="cursor-pointer rounded-full bg-white/90 p-1.5 text-slate-500 transition-colors hover:bg-red-500 hover:text-white"
+                            title={t.controls.cropReset}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
                       onPreviewClick(item);
                     }}
-                    className="p-2 bg-white/90 hover:bg-indigo-500 hover:text-white rounded-full transition-colors cursor-pointer"
+                    className="cursor-pointer rounded-full bg-white/90 p-2 transition-colors hover:bg-indigo-500 hover:text-white"
                     title={t.batch.preview}
                   >
-                    <Eye className="w-4 h-4" />
+                    <Eye className="h-4 w-4" />
                   </button>
                 </div>
 
                 {/* 狀態指示器 */}
-                {item.status === 'processing' && (
-                  <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                {item.status === "processing" && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/50">
                     <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="w-6 h-6 text-white animate-spin" />
-                      <span className="text-xs text-white">{t.batch.processing}</span>
+                      <Loader2 className="h-6 w-6 animate-spin text-white" />
+                      <span className="text-xs text-white">
+                        {t.batch.processing}
+                      </span>
                     </div>
                   </div>
                 )}
 
-                {item.status === 'completed' && (
-                  <div className="absolute top-2 right-2 bg-green-500 text-white text-xs px-2 py-1 rounded shadow-lg">
+                {item.status === "completed" && (
+                  <div className="absolute top-2 right-2 rounded bg-green-500 px-2 py-1 text-xs text-white shadow-lg">
                     ✓ {t.batch.done}
                   </div>
                 )}
 
                 {/* 若有多尺寸輸出，顯示下載按鈕群 */}
                 {item.resultVariants && item.resultVariants.length > 0 && (
-                  <div className="absolute bottom-2 right-2 flex flex-col gap-1">
+                  <div className="absolute right-2 bottom-2 flex flex-col gap-1">
                     {item.resultVariants.map((v) => (
                       <button
                         key={`${item.id}-${v.width}`}
                         onClick={(e) => {
                           e.stopPropagation();
-                          const filename = replaceExtension(item.file.name, 'image/png', v.width, v.height);
+                          const filename = replaceExtension(
+                            item.file.name,
+                            "image/png",
+                            v.width,
+                            v.height,
+                          );
                           downloadImage(v.blob, filename);
                         }}
-                        className="bg-black/60 text-white text-[10px] px-2 py-1 rounded flex items-center gap-1 shadow"
+                        className="flex items-center gap-1 rounded bg-black/60 px-2 py-1 text-[10px] text-white shadow"
                         title={`Download ${v.width}×${v.height}`}
                       >
-                        <Download className="w-3 h-3" /> {v.width}
+                        <Download className="h-3 w-3" /> {v.width}
                       </button>
                     ))}
                   </div>
                 )}
 
-                {item.status === 'error' && (
-                  <div className="absolute inset-0 bg-red-500/20 flex items-center justify-center">
-                    <div className="text-xs text-red-700 bg-white px-3 py-1.5 rounded shadow-lg">
+                {item.status === "error" && (
+                  <div className="absolute inset-0 flex items-center justify-center bg-red-500/20">
+                    <div className="rounded bg-white px-3 py-1.5 text-xs text-red-700 shadow-lg">
                       {item.error || t.batch.failed}
                     </div>
                   </div>
                 )}
 
                 {/* 尺寸資訊 */}
-                <span className="absolute bottom-2 left-2 bg-black/60 text-white text-[10px] px-2 py-0.5 rounded backdrop-blur-sm font-mono tabular-nums">
-                  {item.file.name.split('.')[0]}
+                <span className="absolute bottom-2 left-2 rounded bg-black/60 px-2 py-0.5 font-mono text-[10px] text-white tabular-nums backdrop-blur-sm">
+                  {item.file.name.split(".")[0]}
                 </span>
               </div>
             );
           })}
 
           {/* 加入更多按鈕 */}
-          <div 
+          <div
             onClick={() => fileInputRef.current?.click()}
-            className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 rounded-xl text-slate-400 hover:border-indigo-500 hover:text-indigo-500 transition-colors bg-slate-50/50 cursor-pointer aspect-video"
+            className="flex aspect-video cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-slate-300 bg-slate-50/50 text-slate-400 transition-colors hover:border-indigo-500 hover:text-indigo-500"
           >
-            <Plus className="w-8 h-8 mb-1" />
+            <Plus className="mb-1 h-8 w-8" />
             <span className="text-xs font-medium">{t.upload.addMore}</span>
           </div>
         </div>

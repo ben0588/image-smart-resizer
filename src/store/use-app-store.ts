@@ -4,15 +4,16 @@
  * 符合專案規格定義的 AppState
  */
 
-import { create } from 'zustand';
-import type { AppState } from '@/src/types';
+import { create } from "zustand";
+import type { AppState } from "@/src/types";
 import {
   resizeImage,
   createPreviewURL,
   revokePreviewURL,
   convertSvgToPngSizes,
   checkCanvasPermission,
-} from '@/src/lib/engine/processor';
+  loadWatermarkDataUrl,
+} from "@/src/lib/engine/processor";
 
 const useAppStore = create<AppState>((set, get) => ({
   // === 狀態 ===
@@ -33,19 +34,30 @@ const useAppStore = create<AppState>((set, get) => ({
   isEstimating: false,
 
   config: {
-    width: 800,
-    height: 600,
+    width: 1200,
+    height: 630,
     maintainAspectRatio: true,
     aspectRatio: 4 / 3,
-    format: 'image/webp',
+    format: "image/webp",
     quality: 0.85, // 85%
-    fitMode: 'cover', // 預設為裁切填滿
+    fitMode: "cover", // 預設為裁切填滿
   },
 
   // 單張模式的自訂裁切區域
-  customCrop: null as import('@/src/types').CropArea | null,
+  customCrop: null as import("@/src/types").CropArea | null,
   // 單張模式的完整裁切資料（用於恢復 UI 狀態）
-  cropData: null as import('@/src/types').CropData | null,
+  cropData: null as import("@/src/types").CropData | null,
+
+  // 浮水印設定
+  watermark: {
+    file: null,
+    previewUrl: null,
+    position: "bottom-right" as import("@/src/types").WatermarkPosition,
+    size: 0.15,
+    margin: 20,
+    opacity: 0, // 透明度 0% = 完全不透明
+    customPosition: null,
+  } as import("@/src/types").WatermarkConfig,
 
   error: null,
 
@@ -75,7 +87,7 @@ const useAppStore = create<AppState>((set, get) => ({
     const img = new Image();
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
-      
+
       set({
         originalDimensions: {
           width: img.naturalWidth,
@@ -106,7 +118,7 @@ const useAppStore = create<AppState>((set, get) => ({
    * 若 maintainAspectRatio 為 true，自動計算對應尺寸
    * 當設定變更時，重置批次檔案的處理狀態（允許重新下載）
    */
-  updateConfig: (partial: Partial<AppState['config']>) => {
+  updateConfig: (partial: Partial<AppState["config"]>) => {
     const state = get();
     const newConfig = { ...state.config, ...partial };
 
@@ -124,26 +136,35 @@ const useAppStore = create<AppState>((set, get) => ({
     // 當設定變更時，重置批次檔案的處理狀態（讓使用者可以重新下載）
     const resetBatchFiles = state.batchFiles.map((f) => ({
       ...f,
-      status: 'pending' as const,
+      status: "pending" as const,
       resultBlob: undefined,
       resultVariants: undefined,
       estimatedSize: undefined,
       isEstimating: false,
       error: undefined,
       // 如果尺寸變更，清除自訂裁切
-      customCrop: (partial.width !== undefined || partial.height !== undefined) ? undefined : f.customCrop,
-      cropData: (partial.width !== undefined || partial.height !== undefined) ? undefined : f.cropData,
+      customCrop:
+        partial.width !== undefined || partial.height !== undefined
+          ? undefined
+          : f.customCrop,
+      cropData:
+        partial.width !== undefined || partial.height !== undefined
+          ? undefined
+          : f.cropData,
     }));
 
     // 如果尺寸變更，也清除單張模式的 customCrop 和 cropData
-    const shouldResetCrop = partial.width !== undefined || partial.height !== undefined;
+    const shouldResetCrop =
+      partial.width !== undefined || partial.height !== undefined;
 
-    set({ 
+    set({
       config: newConfig,
       batchFiles: state.isBatchMode ? resetBatchFiles : state.batchFiles,
       // 也清除單檔案模式的處理結果
       resultBlob: null,
-      resultPreviewUrl: state.resultPreviewUrl ? (revokePreviewURL(state.resultPreviewUrl), null) : null,
+      resultPreviewUrl: state.resultPreviewUrl
+        ? (revokePreviewURL(state.resultPreviewUrl), null)
+        : null,
       // 尺寸變更時清除 customCrop 和 cropData
       customCrop: shouldResetCrop ? null : state.customCrop,
       cropData: shouldResetCrop ? null : state.cropData,
@@ -158,13 +179,18 @@ const useAppStore = create<AppState>((set, get) => ({
     const { sourceFile, config } = state;
 
     if (!sourceFile) {
-      set({ error: '請先上傳圖片' });
+      set({ error: "請先上傳圖片" });
       return;
     }
 
     // 驗證尺寸
-    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
-      set({ error: '請輸入有效的圖片尺寸', isProcessing: false });
+    if (
+      !config.width ||
+      !config.height ||
+      config.width <= 0 ||
+      config.height <= 0
+    ) {
+      set({ error: "請輸入有效的圖片尺寸", isProcessing: false });
       return;
     }
 
@@ -185,7 +211,18 @@ const useAppStore = create<AppState>((set, get) => ({
         revokePreviewURL(state.resultPreviewUrl);
       }
 
-      // 執行圖片處理
+      // 執行圖片處理（含浮水印）
+      const watermarkOpt = state.watermark.file
+        ? {
+            imageData: await loadWatermarkDataUrl(state.watermark.file),
+            position: state.watermark.position,
+            size: state.watermark.size,
+            margin: state.watermark.margin,
+            opacity: 1 - state.watermark.opacity, // 透明度轉不透明度
+            customPosition: state.watermark.customPosition,
+          }
+        : undefined;
+
       const blob = await resizeImage(sourceFile, {
         width: config.width,
         height: config.height,
@@ -194,6 +231,7 @@ const useAppStore = create<AppState>((set, get) => ({
         fitMode: config.fitMode,
         customCrop: state.customCrop ?? undefined,
         rotation: state.cropData?.rotation ?? 0,
+        watermark: watermarkOpt,
       });
 
       // 建立預覽 URL
@@ -205,10 +243,17 @@ const useAppStore = create<AppState>((set, get) => ({
         isProcessing: false,
       });
     } catch (error) {
-      const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+      const isPermissionError =
+        error instanceof Error && error.message === "CANVAS_PERMISSION_DENIED";
       set({
-        error: isPermissionError ? null : (error instanceof Error ? error.message : '處理圖片時發生錯誤'),
-        showCanvasPermissionModal: isPermissionError ? true : get().showCanvasPermissionModal,
+        error: isPermissionError
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "處理圖片時發生錯誤",
+        showCanvasPermissionModal: isPermissionError
+          ? true
+          : get().showCanvasPermissionModal,
         isProcessing: false,
       });
     }
@@ -226,6 +271,9 @@ const useAppStore = create<AppState>((set, get) => ({
     }
     if (state.resultPreviewUrl) {
       revokePreviewURL(state.resultPreviewUrl);
+    }
+    if (state.watermark.previewUrl) {
+      revokePreviewURL(state.watermark.previewUrl);
     }
 
     // 清理批次檔案預覽
@@ -247,6 +295,15 @@ const useAppStore = create<AppState>((set, get) => ({
       resultPreviewUrl: null,
       customCrop: null, // 重置單張模式裁切
       cropData: null, // 重置完整裁切資料
+      watermark: {
+        file: null,
+        previewUrl: null,
+        position: "bottom-right",
+        size: 0.15,
+        margin: 20,
+        opacity: 0,
+        customPosition: null,
+      },
       config: {
         width: 800,
         height: 600,
@@ -267,9 +324,13 @@ const useAppStore = create<AppState>((set, get) => ({
    */
   addFiles: (files: File[]) => {
     const state = get();
-    
+
     // 如果只有一個檔案且目前不在批次模式，使用單檔案模式
-    if (files.length === 1 && !state.isBatchMode && state.batchFiles.length === 0) {
+    if (
+      files.length === 1 &&
+      !state.isBatchMode &&
+      state.batchFiles.length === 0
+    ) {
       get().setSourceFile(files[0]);
       return;
     }
@@ -280,15 +341,16 @@ const useAppStore = create<AppState>((set, get) => ({
     }
 
     // 建立批次檔案項目
-    const newBatchFiles = files.map((file) => {
+    const newBatchFiles = files.map((file, index) => {
       const previewUrl = createPreviewURL(file);
       const id = Math.random().toString(36).substr(2, 9);
+      const isFirstFileInBatch = index === 0 && state.batchFiles.length === 0;
 
       // 異步讀取圖片尺寸
       const img = new Image();
       img.onload = () => {
-        set((state) => ({
-          batchFiles: state.batchFiles.map((f) =>
+        set((s) => ({
+          batchFiles: s.batchFiles.map((f) =>
             f.id === id
               ? {
                   ...f,
@@ -297,9 +359,24 @@ const useAppStore = create<AppState>((set, get) => ({
                     height: img.naturalHeight,
                   },
                 }
-              : f
+              : f,
           ),
         }));
+
+        // 如果是批次中的第一張圖片，將其尺寸設為 config 預設值
+        if (isFirstFileInBatch) {
+          const aspectRatio = img.naturalWidth / img.naturalHeight;
+          const currentConfig = get().config;
+          set({
+            config: {
+              ...currentConfig,
+              width: img.naturalWidth,
+              height: img.naturalHeight,
+              aspectRatio,
+              maintainAspectRatio: true,
+            },
+          });
+        }
       };
       img.src = previewUrl;
 
@@ -307,7 +384,7 @@ const useAppStore = create<AppState>((set, get) => ({
         id,
         file,
         previewUrl,
-        status: 'pending' as const,
+        status: "pending" as const,
       };
     });
 
@@ -325,7 +402,7 @@ const useAppStore = create<AppState>((set, get) => ({
   removeFile: (id: string) => {
     const state = get();
     const item = state.batchFiles.find((f) => f.id === id);
-    
+
     if (item) {
       revokePreviewURL(item.previewUrl);
     }
@@ -348,13 +425,18 @@ const useAppStore = create<AppState>((set, get) => ({
     const { config, batchFiles } = state;
 
     if (batchFiles.length === 0) {
-      set({ error: '沒有檔案需要處理' });
+      set({ error: "沒有檔案需要處理" });
       return;
     }
 
     // 驗證尺寸
-    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
-      set({ error: '請輸入有效的圖片尺寸', isProcessing: false });
+    if (
+      !config.width ||
+      !config.height ||
+      config.width <= 0 ||
+      config.height <= 0
+    ) {
+      set({ error: "請輸入有效的圖片尺寸", isProcessing: false });
       return;
     }
 
@@ -377,7 +459,7 @@ const useAppStore = create<AppState>((set, get) => ({
         // 更新狀態為處理中
         set((state) => ({
           batchFiles: state.batchFiles.map((f) =>
-            f.id === item.id ? { ...f, status: 'processing' as const } : f
+            f.id === item.id ? { ...f, status: "processing" as const } : f,
           ),
         }));
 
@@ -388,14 +470,19 @@ const useAppStore = create<AppState>((set, get) => ({
 
           await new Promise<void>((resolve, reject) => {
             img.onload = () => resolve();
-            img.onerror = () => reject(new Error('載入圖片失敗'));
+            img.onerror = () => reject(new Error("載入圖片失敗"));
             img.src = previewUrl;
           });
 
           // 若為 SVG，產生常見尺寸的 PNG 變體
-          if (item.file.type === 'image/svg+xml') {
+          if (item.file.type === "image/svg+xml") {
             const sizes = [48, 180, 192, 512];
-            const variants = await convertSvgToPngSizes(item.file, sizes, 'image/png', 1);
+            const variants = await convertSvgToPngSizes(
+              item.file,
+              sizes,
+              "image/png",
+              1,
+            );
 
             // 建立 object URLs 可供下載/預覽
             const variantsWithUrls = variants.map((v) => ({
@@ -410,14 +497,31 @@ const useAppStore = create<AppState>((set, get) => ({
             set((state) => ({
               batchFiles: state.batchFiles.map((f) =>
                 f.id === item.id
-                  ? { ...f, status: 'completed' as const, resultVariants: variantsWithUrls }
-                  : f
+                  ? {
+                      ...f,
+                      status: "completed" as const,
+                      resultVariants: variantsWithUrls,
+                    }
+                  : f,
               ),
             }));
           } else {
             // 使用設定的尺寸或原始尺寸
             const width = config.width || img.naturalWidth;
             const height = config.height || img.naturalHeight;
+
+            // 建構浮水印參數
+            const currentWatermark = get().watermark;
+            const watermarkOpt = currentWatermark.file
+              ? {
+                  imageData: await loadWatermarkDataUrl(currentWatermark.file),
+                  position: currentWatermark.position,
+                  size: currentWatermark.size,
+                  margin: currentWatermark.margin,
+                  opacity: 1 - currentWatermark.opacity, // 透明度轉不透明度
+                  customPosition: currentWatermark.customPosition,
+                }
+              : undefined;
 
             // 處理圖片
             const blob = await resizeImage(item.file, {
@@ -428,20 +532,28 @@ const useAppStore = create<AppState>((set, get) => ({
               fitMode: config.fitMode,
               customCrop: item.customCrop,
               rotation: item.cropData?.rotation ?? 0,
+              watermark: watermarkOpt,
             });
 
-            // 更新狀態為完成
+            // 更新狀態為完成，同時記錄壓縮後大小
             set((state) => ({
               batchFiles: state.batchFiles.map((f) =>
                 f.id === item.id
-                  ? { ...f, status: 'completed' as const, resultBlob: blob }
-                  : f
+                  ? {
+                      ...f,
+                      status: "completed" as const,
+                      resultBlob: blob,
+                      estimatedSize: blob.size,
+                    }
+                  : f,
               ),
             }));
           }
         } catch (error) {
-          const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
-          
+          const isPermissionError =
+            error instanceof Error &&
+            error.message === "CANVAS_PERMISSION_DENIED";
+
           if (isPermissionError) {
             set({ showCanvasPermissionModal: true, isProcessing: false });
             return; // 終止後續處理
@@ -453,10 +565,10 @@ const useAppStore = create<AppState>((set, get) => ({
               f.id === item.id
                 ? {
                     ...f,
-                    status: 'error' as const,
-                    error: error instanceof Error ? error.message : '處理失敗',
+                    status: "error" as const,
+                    error: error instanceof Error ? error.message : "處理失敗",
                   }
-                : f
+                : f,
             ),
           }));
         }
@@ -465,7 +577,7 @@ const useAppStore = create<AppState>((set, get) => ({
       set({ isProcessing: false });
     } catch (error) {
       set({
-        error: error instanceof Error ? error.message : '批次處理時發生錯誤',
+        error: error instanceof Error ? error.message : "批次處理時發生錯誤",
         isProcessing: false,
       });
     }
@@ -477,7 +589,8 @@ const useAppStore = create<AppState>((set, get) => ({
    */
   estimateSize: async () => {
     const state = get();
-    const { sourceFile, config, isBatchMode, batchFiles, selectedFileId } = state;
+    const { sourceFile, config, isBatchMode, batchFiles, selectedFileId } =
+      state;
 
     // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
     if (!checkCanvasPermission()) {
@@ -507,7 +620,12 @@ const useAppStore = create<AppState>((set, get) => ({
     }
 
     // 驗證尺寸，防止 0x0 錯誤
-    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+    if (
+      !config.width ||
+      !config.height ||
+      config.width <= 0 ||
+      config.height <= 0
+    ) {
       set({ estimatedSize: null, isEstimating: false });
       return;
     }
@@ -515,6 +633,18 @@ const useAppStore = create<AppState>((set, get) => ({
     set({ isEstimating: true });
 
     try {
+      // 建構浮水印參數
+      const watermarkOpt = state.watermark.file
+        ? {
+            imageData: await loadWatermarkDataUrl(state.watermark.file),
+            position: state.watermark.position,
+            size: state.watermark.size,
+            margin: state.watermark.margin,
+            opacity: 1 - state.watermark.opacity, // 透明度轉不透明度
+            customPosition: state.watermark.customPosition,
+          }
+        : undefined;
+
       // 使用 resizeImage 進行實際壓縮以取得精確大小
       const blob = await resizeImage(targetFile, {
         width: config.width,
@@ -524,6 +654,7 @@ const useAppStore = create<AppState>((set, get) => ({
         fitMode: config.fitMode,
         customCrop: state.customCrop ?? undefined,
         rotation: state.cropData?.rotation ?? 0,
+        watermark: watermarkOpt,
       });
 
       set({
@@ -537,16 +668,17 @@ const useAppStore = create<AppState>((set, get) => ({
           batchFiles: state.batchFiles.map((f) =>
             f.id === selectedFileId
               ? { ...f, estimatedSize: blob.size, isEstimating: false }
-              : f
+              : f,
           ),
         }));
       }
     } catch (error) {
-      const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+      const isPermissionError =
+        error instanceof Error && error.message === "CANVAS_PERMISSION_DENIED";
       if (isPermissionError) {
         set({ showCanvasPermissionModal: true });
       } else {
-        console.error('預估大小失敗:', error);
+        console.error("預估大小失敗:", error);
       }
       set({ estimatedSize: null, isEstimating: false });
     }
@@ -560,10 +692,15 @@ const useAppStore = create<AppState>((set, get) => ({
     const { config, batchFiles } = get();
 
     // 驗證尺寸
-    if (!config.width || !config.height || config.width <= 0 || config.height <= 0) {
+    if (
+      !config.width ||
+      !config.height ||
+      config.width <= 0 ||
+      config.height <= 0
+    ) {
       return;
     }
-    
+
     // 檢查 Canvas 權限（防止 Brave 等瀏覽器的指紋保護）
 
     if (batchFiles.length === 0) return;
@@ -585,11 +722,24 @@ const useAppStore = create<AppState>((set, get) => ({
       // 每次迭代時重新取得最新狀態
       const currentState = get();
       const item = currentState.batchFiles.find((f) => f.id === fileId);
-      
+
       // 如果檔案已被移除，跳過
       if (!item) continue;
 
       try {
+        // 建構浮水印參數
+        const wmState = get().watermark;
+        const watermarkOpt = wmState.file
+          ? {
+              imageData: await loadWatermarkDataUrl(wmState.file),
+              position: wmState.position,
+              size: wmState.size,
+              margin: wmState.margin,
+              opacity: wmState.opacity,
+              customPosition: wmState.customPosition,
+            }
+          : undefined;
+
         const blob = await resizeImage(item.file, {
           width: currentState.config.width,
           height: currentState.config.height,
@@ -598,22 +748,28 @@ const useAppStore = create<AppState>((set, get) => ({
           fitMode: currentState.config.fitMode,
           customCrop: item.customCrop,
           rotation: item.cropData?.rotation ?? 0,
+          watermark: watermarkOpt,
         });
 
         set((state) => ({
           batchFiles: state.batchFiles.map((f) =>
             f.id === fileId
               ? { ...f, estimatedSize: blob.size, isEstimating: false }
-              : f
+              : f,
           ),
         }));
       } catch (error) {
-        const isPermissionError = error instanceof Error && error.message === 'CANVAS_PERMISSION_DENIED';
+        const isPermissionError =
+          error instanceof Error &&
+          error.message === "CANVAS_PERMISSION_DENIED";
         if (isPermissionError) {
           set({ showCanvasPermissionModal: true });
           // 標記剩下所有為非計算中
           set((state) => ({
-            batchFiles: state.batchFiles.map((f) => ({ ...f, isEstimating: false })),
+            batchFiles: state.batchFiles.map((f) => ({
+              ...f,
+              isEstimating: false,
+            })),
           }));
           return; // 終止處理
         }
@@ -623,7 +779,7 @@ const useAppStore = create<AppState>((set, get) => ({
           batchFiles: state.batchFiles.map((f) =>
             f.id === fileId
               ? { ...f, estimatedSize: undefined, isEstimating: false }
-              : f
+              : f,
           ),
         }));
       }
@@ -635,7 +791,7 @@ const useAppStore = create<AppState>((set, get) => ({
    */
   selectFile: (id: string | null) => {
     const state = get();
-    
+
     if (id === null) {
       set({ selectedFileId: null });
       return;
@@ -648,11 +804,13 @@ const useAppStore = create<AppState>((set, get) => ({
     const img = new Image();
     img.onload = () => {
       const aspectRatio = img.naturalWidth / img.naturalHeight;
-      
+      // 使用 get() 取最新的 config，避免閉包捕獲到過時的狀態
+      const currentConfig = get().config;
+
       set({
         selectedFileId: id,
         config: {
-          ...state.config,
+          ...currentConfig,
           width: img.naturalWidth,
           height: img.naturalHeight,
           aspectRatio,
@@ -668,18 +826,21 @@ const useAppStore = create<AppState>((set, get) => ({
    * 設定批次檔案的自訂裁切資料
    * 儲存完整的 cropData 用於恢復 UI，並提取 cropArea 用於實際裁切
    */
-  setCropForFile: (id: string, cropData: import('@/src/types').CropData | undefined) => {
+  setCropForFile: (
+    id: string,
+    cropData: import("@/src/types").CropData | undefined,
+  ) => {
     set((state) => ({
       batchFiles: state.batchFiles.map((f) =>
         f.id === id
-          ? { 
-              ...f, 
+          ? {
+              ...f,
               cropData,
               customCrop: cropData?.cropArea,
-              status: 'pending' as const, 
-              resultBlob: undefined 
+              status: "pending" as const,
+              resultBlob: undefined,
             }
-          : f
+          : f,
       ),
     }));
   },
@@ -688,21 +849,21 @@ const useAppStore = create<AppState>((set, get) => ({
    * 設定單張模式的自訂裁切資料
    * 設定後自動觸發 processImage 來即時更新預覽
    */
-  setCustomCrop: (cropData: import('@/src/types').CropData | null) => {
+  setCustomCrop: (cropData: import("@/src/types").CropData | null) => {
     const state = get();
-    
+
     // 清除舊的預覽
     if (state.resultPreviewUrl) {
       revokePreviewURL(state.resultPreviewUrl);
     }
-    
-    set({ 
+
+    set({
       cropData,
       customCrop: cropData?.cropArea ?? null,
       resultBlob: null,
       resultPreviewUrl: null,
     });
-    
+
     // 如果有設定裁切且有來源檔案，自動執行處理以更新預覽
     if (cropData && state.sourceFile) {
       // 延遲一個 tick 確保狀態已更新
@@ -710,6 +871,82 @@ const useAppStore = create<AppState>((set, get) => ({
         get().processImage();
       }, 0);
     }
+  },
+
+  /**
+   * 設定浮水印圖片檔案
+   */
+  setWatermarkFile: (file: File) => {
+    const state = get();
+    // 清理舊的浮水印預覽 URL
+    if (state.watermark.previewUrl) {
+      revokePreviewURL(state.watermark.previewUrl);
+    }
+    // 清除舊的處理結果（可能含舊浮水印或無浮水印），確保下載時重新處理
+    if (state.resultPreviewUrl) {
+      revokePreviewURL(state.resultPreviewUrl);
+    }
+    const previewUrl = createPreviewURL(file);
+    set({
+      watermark: {
+        ...state.watermark,
+        file,
+        previewUrl,
+        // 重置位置為預設
+        position: "bottom-right",
+        customPosition: null,
+      },
+      resultBlob: null,
+      resultPreviewUrl: null,
+    });
+  },
+
+  /**
+   * 移除浮水印
+   * 同時清除已處理的預覽圖（因為包含了舊浮水印），讓預覽回到原圖
+   */
+  removeWatermark: () => {
+    const state = get();
+    if (state.watermark.previewUrl) {
+      revokePreviewURL(state.watermark.previewUrl);
+    }
+    // 清除含有舊浮水印的處理結果預覽
+    if (state.resultPreviewUrl) {
+      revokePreviewURL(state.resultPreviewUrl);
+    }
+    set({
+      watermark: {
+        file: null,
+        previewUrl: null,
+        position: "bottom-right",
+        size: 0.15,
+        margin: 20,
+        opacity: 0,
+        customPosition: null,
+      },
+      resultBlob: null,
+      resultPreviewUrl: null,
+    });
+  },
+
+  /**
+   * 更新浮水印設定（不含 file/previewUrl）
+   * 同時清除已處理的預覽結果，避免舊的嵌入浮水印還在左側預覽顯示
+   */
+  updateWatermarkConfig: (partial) => {
+    const state = get();
+    // 若已有處理結果（含舊浮水印），清除它
+    if (state.resultPreviewUrl) {
+      revokePreviewURL(state.resultPreviewUrl);
+    }
+    set({
+      watermark: {
+        ...state.watermark,
+        ...partial,
+      },
+      resultBlob: null,
+      resultPreviewUrl: null,
+    });
   },
 
   /**

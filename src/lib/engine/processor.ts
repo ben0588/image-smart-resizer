@@ -4,9 +4,14 @@
  * 所有處理皆在瀏覽器端執行，確保隱私安全
  */
 
-import Pica from 'pica';
-import JSZip from 'jszip';
-import type { ProcessOptions, Dimensions, CropArea } from '@/src/types';
+import Pica from "pica";
+import JSZip from "jszip";
+import type {
+  ProcessOptions,
+  Dimensions,
+  CropArea,
+  WatermarkPosition,
+} from "@/src/types";
 
 const pica = Pica();
 
@@ -26,22 +31,22 @@ export async function checkWebpEncodeSupport(): Promise<boolean> {
   }
 
   try {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = 1;
     canvas.height = 1;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (!ctx) {
       webpEncodeSupportCached = false;
       return false;
     }
-    
+
     // 繪製一個紅色像素
-    ctx.fillStyle = '#FF0000';
+    ctx.fillStyle = "#FF0000";
     ctx.fillRect(0, 0, 1, 1);
 
     // 嘗試輸出為 WebP
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob((b) => resolve(b), 'image/webp', 0.8);
+      canvas.toBlob((b) => resolve(b), "image/webp", 0.8);
     });
 
     // 檢查是否成功產生 WebP（而非回退到 PNG）
@@ -52,19 +57,22 @@ export async function checkWebpEncodeSupport(): Promise<boolean> {
 
     // 檢查 MIME 類型
     // Safari 不支援 WebP 編碼時會回退到 PNG (image/png)
-    const isWebp = blob.type === 'image/webp';
-    
+    const isWebp = blob.type === "image/webp";
+
     // 額外檢查：WebP 1x1 紅色像素應該非常小（通常 < 100 bytes）
     // PNG 1x1 會稍大一些，但這不是主要判斷依據
     webpEncodeSupportCached = isWebp;
-    
+
     if (!isWebp) {
-      console.warn('瀏覽器不支援 WebP 編碼，將回退到 JPEG。blob.type:', blob.type);
+      console.warn(
+        "瀏覽器不支援 WebP 編碼，將回退到 JPEG。blob.type:",
+        blob.type,
+      );
     }
-    
+
     return isWebp;
   } catch (e) {
-    console.error('WebP 編碼支援檢測失敗:', e);
+    console.error("WebP 編碼支援檢測失敗:", e);
     webpEncodeSupportCached = false;
     return false;
   }
@@ -79,44 +87,44 @@ export async function checkWebpEncodeSupport(): Promise<boolean> {
 export function checkCanvasPermission(): boolean {
   try {
     // 建立一個較大的 canvas 來模擬真實場景
-    const testCanvas = document.createElement('canvas');
+    const testCanvas = document.createElement("canvas");
     testCanvas.width = 10;
     testCanvas.height = 10;
-    const ctx = testCanvas.getContext('2d', { willReadFrequently: true });
-    
+    const ctx = testCanvas.getContext("2d", { willReadFrequently: true });
+
     if (!ctx) return false;
-    
+
     // 繪製測試圖案（模擬實際圖片處理）
-    ctx.fillStyle = 'rgb(255, 100, 50)';
+    ctx.fillStyle = "rgb(255, 100, 50)";
     ctx.fillRect(0, 0, 10, 10);
-    ctx.fillStyle = 'rgb(50, 100, 255)';
+    ctx.fillStyle = "rgb(50, 100, 255)";
     ctx.fillRect(2, 2, 6, 6);
-    
+
     // 嘗試讀取完整畫素資料（這是 Pica 會做的）
     const imageData = ctx.getImageData(0, 0, 10, 10);
-    
+
     // 驗證資料完整性
     if (!imageData || imageData.data.length !== 10 * 10 * 4) {
-      console.warn('Canvas getImageData 返回了不完整的資料');
+      console.warn("Canvas getImageData 返回了不完整的資料");
       return false;
     }
-    
+
     // 嘗試建立新的 ImageData 並寫回（Pica 的典型操作）
     const newImageData = ctx.createImageData(10, 10);
     for (let i = 0; i < newImageData.data.length; i++) {
       newImageData.data[i] = imageData.data[i];
     }
     ctx.putImageData(newImageData, 0, 0);
-    
+
     // 再次讀取驗證（確保完整的讀寫循環都能執行）
     const verifyData = ctx.getImageData(0, 0, 10, 10);
     if (!verifyData || verifyData.data.length === 0) {
       return false;
     }
-    
+
     return true;
   } catch (e) {
-    console.error('Canvas 存取被拒絕，可能是指紋保護已啟用:', e);
+    console.error("Canvas 存取被拒絕，可能是指紋保護已啟用:", e);
     return false;
   }
 }
@@ -128,7 +136,7 @@ function calculateCoverCrop(
   srcWidth: number,
   srcHeight: number,
   targetWidth: number,
-  targetHeight: number
+  targetHeight: number,
 ): CropArea {
   const srcRatio = srcWidth / srcHeight;
   const targetRatio = targetWidth / targetHeight;
@@ -159,8 +167,13 @@ function calculateContainFit(
   srcWidth: number,
   srcHeight: number,
   targetWidth: number,
-  targetHeight: number
-): { scaledWidth: number; scaledHeight: number; offsetX: number; offsetY: number } {
+  targetHeight: number,
+): {
+  scaledWidth: number;
+  scaledHeight: number;
+  offsetX: number;
+  offsetY: number;
+} {
   const srcRatio = srcWidth / srcHeight;
   const targetRatio = targetWidth / targetHeight;
 
@@ -190,17 +203,17 @@ function calculateContainFit(
  */
 function rotateImage(
   img: HTMLImageElement,
-  rotation: number
+  rotation: number,
 ): { canvas: HTMLCanvasElement; width: number; height: number } {
   // 正規化角度到 0-360 範圍
   const normalizedRotation = ((rotation % 360) + 360) % 360;
-  
+
   // 如果沒有旋轉，直接返回原始圖片
   if (normalizedRotation === 0) {
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = img.naturalWidth;
     canvas.height = img.naturalHeight;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext("2d");
     if (ctx) {
       ctx.drawImage(img, 0, 0);
     }
@@ -218,13 +231,13 @@ function rotateImage(
   const newHeight = Math.ceil(srcHeight * cos + srcWidth * sin);
 
   // 建立旋轉後的 canvas
-  const canvas = document.createElement('canvas');
+  const canvas = document.createElement("canvas");
   canvas.width = newWidth;
   canvas.height = newHeight;
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext("2d");
 
   if (!ctx) {
-    throw new Error('無法建立 Canvas Context');
+    throw new Error("無法建立 Canvas Context");
   }
 
   // 移動到中心點，旋轉，然後繪製
@@ -236,6 +249,106 @@ function rotateImage(
 }
 
 /**
+ * 讀取浮水印檔案為 data URL（用於傳遞給 resizeImage）
+ */
+export function loadWatermarkDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("無法讀取浮水印檔案"));
+    };
+    reader.onerror = () => reject(new Error("讀取浮水印檔案失敗"));
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * 計算浮水印在目標 canvas 上的位置與大小
+ */
+function calculateWatermarkPlacement(
+  canvasWidth: number,
+  canvasHeight: number,
+  wmNaturalWidth: number,
+  wmNaturalHeight: number,
+  position: WatermarkPosition,
+  sizeRatio: number,
+  margin: number,
+  customPosition: { x: number; y: number } | null,
+): { x: number; y: number; w: number; h: number } {
+  // 計算浮水印繪製大小 (sizeRatio 相對於 canvas 寬度)
+  const w = Math.round(canvasWidth * sizeRatio);
+  const aspect = wmNaturalWidth / wmNaturalHeight;
+  const h = Math.round(w / aspect);
+
+  // 如果有自訂拖曳位置，用百分比算
+  if (customPosition) {
+    const x = Math.round((customPosition.x / 100) * canvasWidth);
+    const y = Math.round((customPosition.y / 100) * canvasHeight);
+    return { x, y, w, h };
+  }
+
+  // 根據九宮格位置計算
+  let x = 0;
+  let y = 0;
+
+  // X 軸
+  if (position.includes("left")) {
+    x = margin;
+  } else if (position.includes("right")) {
+    x = canvasWidth - w - margin;
+  } else {
+    x = Math.round((canvasWidth - w) / 2);
+  }
+
+  // Y 軸
+  if (position.startsWith("top")) {
+    y = margin;
+  } else if (position.startsWith("bottom")) {
+    y = canvasHeight - h - margin;
+  } else {
+    y = Math.round((canvasHeight - h) / 2);
+  }
+
+  return { x, y, w, h };
+}
+
+/**
+ * 在 canvas 上繪製浮水印
+ */
+async function drawWatermarkOnCanvas(
+  targetCanvas: HTMLCanvasElement,
+  watermarkOpt: NonNullable<ProcessOptions["watermark"]>,
+): Promise<void> {
+  const ctx = targetCanvas.getContext("2d");
+  if (!ctx) return;
+
+  // 載入浮水印圖片
+  const wmImg = new Image();
+  wmImg.src = watermarkOpt.imageData;
+  await new Promise<void>((res, rej) => {
+    wmImg.onload = () => res();
+    wmImg.onerror = () => rej(new Error("載入浮水印圖片失敗"));
+  });
+
+  const { x, y, w, h } = calculateWatermarkPlacement(
+    targetCanvas.width,
+    targetCanvas.height,
+    wmImg.naturalWidth,
+    wmImg.naturalHeight,
+    watermarkOpt.position,
+    watermarkOpt.size,
+    watermarkOpt.margin,
+    watermarkOpt.customPosition,
+  );
+
+  ctx.save();
+  ctx.globalAlpha = watermarkOpt.opacity;
+  ctx.drawImage(wmImg, x, y, w, h);
+  ctx.restore();
+}
+
+/**
  * 調整圖片大小
  * @param file - 原始圖片檔案
  * @param options - 調整選項
@@ -243,9 +356,17 @@ function rotateImage(
  */
 export async function resizeImage(
   file: File,
-  options: ProcessOptions
+  options: ProcessOptions,
 ): Promise<Blob> {
-  const { width, height, format, quality, fitMode = 'cover', customCrop, rotation = 0 } = options;
+  const {
+    width,
+    height,
+    format,
+    quality,
+    fitMode = "cover",
+    customCrop,
+    rotation = 0,
+  } = options;
 
   // 驗證尺寸，防止 0x0 錯誤
   if (!width || !height || width <= 0 || height <= 0) {
@@ -257,8 +378,8 @@ export async function resizeImage(
 
     reader.onload = async (e: ProgressEvent<FileReader>) => {
       try {
-        if (!e.target?.result || typeof e.target.result !== 'string') {
-          throw new Error('無法讀取圖片檔案');
+        if (!e.target?.result || typeof e.target.result !== "string") {
+          throw new Error("無法讀取圖片檔案");
         }
 
         // 建立原始圖片元素
@@ -273,7 +394,7 @@ export async function resizeImage(
         let workingSource: HTMLCanvasElement | HTMLImageElement = img;
         let srcWidth = img.naturalWidth;
         let srcHeight = img.naturalHeight;
-        
+
         if (rotation !== 0) {
           const rotated = rotateImage(img, rotation);
           workingSource = rotated.canvas;
@@ -285,32 +406,38 @@ export async function resizeImage(
         let sourceCanvas: HTMLCanvasElement;
         let targetCanvas: HTMLCanvasElement;
 
-        if (fitMode === 'cover') {
+        if (fitMode === "cover") {
           // Cover 模式：裁切填滿
-          const crop = customCrop || calculateCoverCrop(srcWidth, srcHeight, width, height);
-          
+          const crop =
+            customCrop ||
+            calculateCoverCrop(srcWidth, srcHeight, width, height);
+
           // 建立裁切後的來源 canvas
-          sourceCanvas = document.createElement('canvas');
+          sourceCanvas = document.createElement("canvas");
           sourceCanvas.width = Math.round(crop.width);
           sourceCanvas.height = Math.round(crop.height);
-          const sourceCtx = sourceCanvas.getContext('2d');
-          
+          const sourceCtx = sourceCanvas.getContext("2d");
+
           if (!sourceCtx) {
-            throw new Error('無法建立 Canvas Context');
+            throw new Error("無法建立 Canvas Context");
           }
-          
+
           // 使用 9 參數 drawImage 正確裁切
           // drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight)
           sourceCtx.drawImage(
             workingSource,
-            Math.round(crop.x), Math.round(crop.y),  // 來源裁切起點
-            Math.round(crop.width), Math.round(crop.height),  // 來源裁切大小
-            0, 0,  // 目標起點
-            Math.round(crop.width), Math.round(crop.height)  // 目標大小
+            Math.round(crop.x),
+            Math.round(crop.y), // 來源裁切起點
+            Math.round(crop.width),
+            Math.round(crop.height), // 來源裁切大小
+            0,
+            0, // 目標起點
+            Math.round(crop.width),
+            Math.round(crop.height), // 目標大小
           );
 
           // 建立目標 canvas
-          targetCanvas = document.createElement('canvas');
+          targetCanvas = document.createElement("canvas");
           targetCanvas.width = width;
           targetCanvas.height = height;
 
@@ -321,25 +448,24 @@ export async function resizeImage(
             unsharpRadius: 0.6,
             unsharpThreshold: 2,
           });
-
-        } else if (fitMode === 'contain') {
+        } else if (fitMode === "contain") {
           // Contain 模式：完整保留（可能有留白）
           const fit = calculateContainFit(srcWidth, srcHeight, width, height);
-          
+
           // 先將原圖縮放到適當大小
-          sourceCanvas = document.createElement('canvas');
+          sourceCanvas = document.createElement("canvas");
           sourceCanvas.width = srcWidth;
           sourceCanvas.height = srcHeight;
-          const sourceCtx = sourceCanvas.getContext('2d');
-          
+          const sourceCtx = sourceCanvas.getContext("2d");
+
           if (!sourceCtx) {
-            throw new Error('無法建立 Canvas Context');
+            throw new Error("無法建立 Canvas Context");
           }
-          
+
           sourceCtx.drawImage(workingSource, 0, 0);
 
           // 建立中間 canvas 進行縮放
-          const scaledCanvas = document.createElement('canvas');
+          const scaledCanvas = document.createElement("canvas");
           scaledCanvas.width = Math.round(fit.scaledWidth);
           scaledCanvas.height = Math.round(fit.scaledHeight);
 
@@ -351,18 +477,18 @@ export async function resizeImage(
           });
 
           // 建立最終目標 canvas（含留白）
-          targetCanvas = document.createElement('canvas');
+          targetCanvas = document.createElement("canvas");
           targetCanvas.width = width;
           targetCanvas.height = height;
-          const targetCtx = targetCanvas.getContext('2d');
-          
+          const targetCtx = targetCanvas.getContext("2d");
+
           if (!targetCtx) {
-            throw new Error('無法建立 Canvas Context');
+            throw new Error("無法建立 Canvas Context");
           }
 
           // 填充白色背景（或透明，依格式）
-          if (format === 'image/jpeg') {
-            targetCtx.fillStyle = '#FFFFFF';
+          if (format === "image/jpeg") {
+            targetCtx.fillStyle = "#FFFFFF";
             targetCtx.fillRect(0, 0, width, height);
           }
 
@@ -370,23 +496,22 @@ export async function resizeImage(
           targetCtx.drawImage(
             scaledCanvas,
             Math.round(fit.offsetX),
-            Math.round(fit.offsetY)
+            Math.round(fit.offsetY),
           );
-
         } else {
           // Fill 模式：強制拉伸（原有行為）
-          sourceCanvas = document.createElement('canvas');
+          sourceCanvas = document.createElement("canvas");
           sourceCanvas.width = srcWidth;
           sourceCanvas.height = srcHeight;
-          const sourceCtx = sourceCanvas.getContext('2d');
-          
+          const sourceCtx = sourceCanvas.getContext("2d");
+
           if (!sourceCtx) {
-            throw new Error('無法建立 Canvas Context');
+            throw new Error("無法建立 Canvas Context");
           }
-          
+
           sourceCtx.drawImage(workingSource, 0, 0);
 
-          targetCanvas = document.createElement('canvas');
+          targetCanvas = document.createElement("canvas");
           targetCanvas.width = width;
           targetCanvas.height = height;
 
@@ -398,45 +523,50 @@ export async function resizeImage(
           });
         }
 
+        // 繪製浮水印（在縮放完成後、格式轉換前）
+        if (options.watermark) {
+          await drawWatermarkOnCanvas(targetCanvas, options.watermark);
+        }
+
         // 轉換為指定格式
         // 處理 Safari 不支援 WebP 編碼的情況
-        let outputFormat = format === 'image/x-icon' ? 'image/png' : format;
+        let outputFormat = format === "image/x-icon" ? "image/png" : format;
         let actualQuality = quality;
-        
-        if (outputFormat === 'image/webp') {
+
+        if (outputFormat === "image/webp") {
           const supportsWebp = await checkWebpEncodeSupport();
           if (!supportsWebp) {
             // Safari 等不支援 WebP 編碼的瀏覽器，回退到 JPEG
-            console.warn('瀏覽器不支援 WebP 編碼，自動回退到 JPEG 格式');
-            outputFormat = 'image/jpeg';
+            console.warn("瀏覽器不支援 WebP 編碼，自動回退到 JPEG 格式");
+            outputFormat = "image/jpeg";
             // 保持相似的壓縮品質
             actualQuality = quality;
           }
         }
-        
-        let blob = await pica.toBlob(
-          targetCanvas,
-          outputFormat,
-          actualQuality
-        );
 
-        if (format === 'image/x-icon') {
+        let blob = await pica.toBlob(targetCanvas, outputFormat, actualQuality);
+
+        if (format === "image/x-icon") {
           blob = await convertPngToIco(blob, width, height);
         }
-        
+
         resolve(blob);
       } catch (error) {
         // 檢查是否為 Pica 的指紋保護錯誤
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        if (errorMessage.includes('getImageData') || errorMessage.includes('fingerprinting')) {
-          reject(new Error('CANVAS_PERMISSION_DENIED'));
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        if (
+          errorMessage.includes("getImageData") ||
+          errorMessage.includes("fingerprinting")
+        ) {
+          reject(new Error("CANVAS_PERMISSION_DENIED"));
         } else {
           reject(error);
         }
       }
     };
 
-    reader.onerror = () => reject(new Error('讀取檔案失敗'));
+    reader.onerror = () => reject(new Error("讀取檔案失敗"));
     reader.readAsDataURL(file);
   });
 }
@@ -452,17 +582,17 @@ export async function resizeImage(
 export async function convertSvgToPngSizes(
   file: File,
   sizes: number[],
-  format: string = 'image/png',
-  quality: number = 1
+  format: string = "image/png",
+  quality: number = 1,
 ): Promise<Array<{ width: number; height: number; blob: Blob }>> {
   // 讀取 SVG 原始文字
   const svgText = await new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => {
-      if (typeof reader.result === 'string') resolve(reader.result);
-      else reject(new Error('無法讀取 SVG'));
+      if (typeof reader.result === "string") resolve(reader.result);
+      else reject(new Error("無法讀取 SVG"));
     };
-    reader.onerror = () => reject(new Error('讀取 SVG 檔案失敗'));
+    reader.onerror = () => reject(new Error("讀取 SVG 檔案失敗"));
     reader.readAsText(file);
   });
 
@@ -480,8 +610,12 @@ export async function convertSvgToPngSizes(
 
   // 若沒有 viewBox，嘗試從 width/height 屬性解析
   if (!vbWidth || !vbHeight) {
-    const wMatch = svgText.match(/width="([0-9.]+)px?"/i) || svgText.match(/width="([0-9.]+)"/i);
-    const hMatch = svgText.match(/height="([0-9.]+)px?"/i) || svgText.match(/height="([0-9.]+)"/i);
+    const wMatch =
+      svgText.match(/width="([0-9.]+)px?"/i) ||
+      svgText.match(/width="([0-9.]+)"/i);
+    const hMatch =
+      svgText.match(/height="([0-9.]+)px?"/i) ||
+      svgText.match(/height="([0-9.]+)"/i);
     if (wMatch && hMatch) {
       vbWidth = Number(wMatch[1]);
       vbHeight = Number(hMatch[1]);
@@ -503,15 +637,16 @@ export async function convertSvgToPngSizes(
     // 注入 width/height 到 SVG，確保正確渲染尺寸
     let svgForSize = svgText;
     // 移除原本的 width/height 屬性以避免衝突
-    svgForSize = svgForSize.replace(/\swidth=\"[^"]*\"/i, '');
-    svgForSize = svgForSize.replace(/\sheight=\"[^"]*\"/i, '');
+    svgForSize = svgForSize.replace(/\swidth=\"[^"]*\"/i, "");
+    svgForSize = svgForSize.replace(/\sheight=\"[^"]*\"/i, "");
 
     // 在 <svg ...> 標籤上插入 width/height 屬性
     svgForSize = svgForSize.replace(/<svg([\s\S]*?)>/i, (match, g1) => {
       return `<svg${g1} width="${targetWidth}px" height="${targetHeight}px">`;
     });
 
-    const svgDataUrl = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svgForSize);
+    const svgDataUrl =
+      "data:image/svg+xml;charset=utf-8," + encodeURIComponent(svgForSize);
 
     // 建立 Image 並繪製到 Canvas
     const img = new Image();
@@ -519,32 +654,32 @@ export async function convertSvgToPngSizes(
 
     await new Promise<void>((res, rej) => {
       img.onload = () => res();
-      img.onerror = () => rej(new Error('SVG 轉 PNG 時載入失敗'));
+      img.onerror = () => rej(new Error("SVG 轉 PNG 時載入失敗"));
     });
 
-    const canvas = document.createElement('canvas');
+    const canvas = document.createElement("canvas");
     canvas.width = targetWidth;
     canvas.height = targetHeight;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) throw new Error('無法建立 Canvas Context');
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("無法建立 Canvas Context");
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
     // Canvas 轉 Blob
     // 處理 Safari 不支援 WebP 編碼的情況
     let outputFormat = format;
-    if (format === 'image/webp') {
+    if (format === "image/webp") {
       const supportsWebp = await checkWebpEncodeSupport();
       if (!supportsWebp) {
-        outputFormat = 'image/jpeg';
+        outputFormat = "image/jpeg";
       }
     }
-    
+
     const blob = await new Promise<Blob | null>((resolve) =>
-      canvas.toBlob((b) => resolve(b), outputFormat, quality)
+      canvas.toBlob((b) => resolve(b), outputFormat, quality),
     );
 
-    if (!blob) throw new Error('SVG 轉 PNG Blob 失敗');
+    if (!blob) throw new Error("SVG 轉 PNG Blob 失敗");
 
     results.push({ width: targetWidth, height: targetHeight, blob });
   }
@@ -566,7 +701,7 @@ export function calculateDimensions(
   originalHeight: number,
   targetWidth: number | null,
   targetHeight: number | null,
-  lockAspectRatio = true
+  lockAspectRatio = true,
 ): Dimensions {
   if (!lockAspectRatio && targetWidth && targetHeight) {
     return { width: targetWidth, height: targetHeight };
@@ -631,13 +766,13 @@ export function revokePreviewURL(url: string | null): void {
  */
 export function downloadImage(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
+  const a = document.createElement("a");
   a.href = url;
   a.download = filename;
-  a.style.display = 'none';
+  a.style.display = "none";
   document.body.appendChild(a);
   a.click();
-  
+
   // 延遲釋放 URL 和移除元素
   setTimeout(() => {
     document.body.removeChild(a);
@@ -651,36 +786,36 @@ export function downloadImage(blob: Blob, filename: string): void {
 async function convertPngToIco(
   pngBlob: Blob,
   width: number,
-  height: number
+  height: number,
 ): Promise<Blob> {
   const buffer = await pngBlob.arrayBuffer();
   const pngData = new Uint8Array(buffer);
-  
+
   // ICO 檔案標頭 (6 byte) + 目錄項 (16 byte)
   const icoHeaderSize = 22;
   const icoDataBuffer = new ArrayBuffer(icoHeaderSize + pngData.length);
   const view = new DataView(icoDataBuffer);
-  
+
   // --- ICO Header ---
-  view.setUint16(0, 0, true);     // Reserved
-  view.setUint16(2, 1, true);     // Type (1 for ICO)
-  view.setUint16(4, 1, true);     // Count (1 image)
-  
+  view.setUint16(0, 0, true); // Reserved
+  view.setUint16(2, 1, true); // Type (1 for ICO)
+  view.setUint16(4, 1, true); // Count (1 image)
+
   // --- Directory Entry ---
-  view.setUint8(6, width >= 256 ? 0 : width);   // Width
+  view.setUint8(6, width >= 256 ? 0 : width); // Width
   view.setUint8(7, height >= 256 ? 0 : height); // Height
-  view.setUint8(8, 0);            // Color count
-  view.setUint8(9, 0);            // Reserved
-  view.setUint16(10, 1, true);    // Planes
-  view.setUint16(12, 32, true);   // Bits per pixel
+  view.setUint8(8, 0); // Color count
+  view.setUint8(9, 0); // Reserved
+  view.setUint16(10, 1, true); // Planes
+  view.setUint16(12, 32, true); // Bits per pixel
   view.setUint32(14, pngData.length, true); // Data size
-  view.setUint32(18, icoHeaderSize, true);  // Data offset
+  view.setUint32(18, icoHeaderSize, true); // Data offset
 
   // --- Copy PNG Data ---
   const fullIcoData = new Uint8Array(icoDataBuffer);
   fullIcoData.set(pngData, icoHeaderSize);
-  
-  return new Blob([icoDataBuffer], { type: 'image/x-icon' });
+
+  return new Blob([icoDataBuffer], { type: "image/x-icon" });
 }
 
 /**
@@ -690,7 +825,7 @@ async function convertPngToIco(
  */
 export async function downloadBatchAsZip(
   files: Array<{ blob: Blob; filename: string }>,
-  zipFilename = 'images.zip'
+  zipFilename = "images.zip",
 ): Promise<void> {
   const zip = new JSZip();
 
@@ -702,7 +837,7 @@ export async function downloadBatchAsZip(
   });
 
   // 產生 ZIP Blob
-  const zipBlob = await zip.generateAsync({ type: 'blob' });
+  const zipBlob = await zip.generateAsync({ type: "blob" });
 
   // 下載 ZIP
   downloadImage(zipBlob, zipFilename);
