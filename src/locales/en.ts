@@ -234,6 +234,55 @@ export const en = {
     ja: "日本語",
     ko: "한국어",
   },
+
+  // App Icon Mode
+  appIcon: {
+    customMode: "Custom Size",
+    appIconMode: "App Icon",
+    selectPlatform: "Select Target Platform",
+    selectPlatformDesc: "Check the platforms you need icons for",
+    sizes: "sizes",
+    totalOutput: "Will generate",
+    files: "files",
+    organizedIn: "organized in",
+    folders: "folders",
+    noPlatform: "Please select at least one platform",
+    noPlatformPreview: "Please select at least one platform first",
+    sourceImage: "Source Image",
+    outputReadOnly: "Below are output size previews (read-only)",
+    usage: "Usage",
+    status: "Status",
+    generateAndDownload: "Generate & Download Icons",
+    qualityHint:
+      "This mode outputs at 100% maximum quality without compression to ensure crisp, sharp icons.",
+    // iOS descriptions
+    descIosAppStore: "App Store main icon, must not contain transparency, sRGB",
+    descIosIphone3x: "iPhone home screen @3x",
+    descIosIphone2x: "iPhone home screen @2x",
+    descIosIpadPro2x: "iPad Pro home screen @2x",
+    descIosIpad2x: "iPad home screen @2x",
+    descIosSettings3x: "System Settings / Preferences @3x",
+    descIosSettings2x: "System Settings / Preferences @2x",
+    descIosNotification3x: "Notification icon @3x",
+    descIosNotification2x: "Notification icon @2x",
+    // Android descriptions
+    descAndroidPlayStore: "Google Play Store icon, 32-bit PNG, max 1MB",
+    descAndroidAdaptive: "Adaptive Icon Full Asset",
+    descAndroidXxxhdpi: "Launcher xxxhdpi",
+    descAndroidXxhdpi: "Launcher xxhdpi",
+    descAndroidXhdpi: "Launcher xhdpi",
+    descAndroidHdpi: "Launcher hdpi",
+    descAndroidMdpi: "Launcher mdpi",
+    descAndroidNotification: "Notification icon",
+    // Web descriptions
+    descWebFavicon32: "Browser tab icon",
+    descWebFavicon16: "Browser tab icon (small)",
+    descWebFaviconIco: "Favicon .ico (legacy browser compatible)",
+    descWebAppleTouchIcon: "Used when adding to iOS home screen",
+    descWebPwa512: "PWA splash screen",
+    descWebPwa192: "PWA install icon",
+    descWebOgImage: "FB/Line social share preview (1.91:1)",
+  },
 } as const;
 
 export type TranslationKeys = typeof en;

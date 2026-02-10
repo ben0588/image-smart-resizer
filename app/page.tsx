@@ -12,11 +12,13 @@ import { toast } from "react-toastify";
 import useAppStore from "@/src/store/use-app-store";
 import { downloadImage, downloadBatchAsZip } from "@/src/lib/engine/processor";
 import { replaceExtension } from "@/src/lib/utils";
+import { APP_ICON_PLATFORMS } from "@/src/lib/app-icon-presets";
 import { useTranslation } from "@/src/hooks/useTranslation";
 import UploadZone from "@/src/components/feature/UploadZone";
 import ControlPanel from "@/src/components/feature/ControlPanel";
 import ImagePreview from "@/src/components/feature/ImagePreview";
 import { BatchPreview } from "@/src/components/feature/BatchPreview";
+import AppIconPreview from "@/src/components/feature/AppIconPreview";
 import { LanguageSelector } from "@/src/components/feature/LanguageSelector";
 import { Modal } from "@/src/components/ui/Modal";
 import { CanvasPermissionModal } from "@/src/components/ui/CanvasPermissionModal";
@@ -36,19 +38,23 @@ export default function SmartResizer() {
     config,
     isProcessing,
     error,
+    editorMode,
     showCanvasPermissionModal,
     setShowCanvasPermissionModal,
     setSourceFile,
     updateConfig,
     processImage,
     processBatch,
+    processAppIcons,
     removeFile,
     reset,
   } = useAppStore();
 
   const handleRetry = async () => {
     setShowCanvasPermissionModal(false);
-    if (isBatchMode) {
+    if (editorMode === "app-icon") {
+      await processAppIcons();
+    } else if (isBatchMode) {
       await processBatch();
     } else {
       await processImage();
@@ -57,6 +63,48 @@ export default function SmartResizer() {
 
   // 處理下載
   const handleDownload = async () => {
+    // App 圖示模式
+    if (editorMode === "app-icon") {
+      // 先處理所有圖示
+      await processAppIcons();
+
+      const state = useAppStore.getState();
+      const results = state.appIconState.results;
+      const selectedPlatforms = state.appIconState.selectedPlatforms;
+
+      if (Object.keys(results).length === 0) {
+        toast.error(t.batch.noFilesProcessed);
+        return;
+      }
+
+      // 收集所有要下載的檔案，依照平台分資料夾
+      const allDownloads: Array<{ blob: Blob; filename: string }> = [];
+
+      for (const platformId of selectedPlatforms) {
+        const platformConfig = APP_ICON_PLATFORMS.find(
+          (p) => p.id === platformId,
+        );
+        if (!platformConfig) continue;
+
+        for (const sizeSpec of platformConfig.sizes) {
+          const key = `${platformId}-${sizeSpec.width}x${sizeSpec.height}-${sizeSpec.format}`;
+          const result = results[key];
+          if (!result) continue;
+
+          // 直接使用預設中定義的 filename（已遵循各平台命名規範）
+          const filename = `${platformConfig.folder}/${sizeSpec.filename}`;
+          allDownloads.push({ blob: result.blob, filename });
+        }
+      }
+
+      if (allDownloads.length > 0) {
+        await downloadBatchAsZip(allDownloads, "app-icons.zip");
+        toast.success(
+          t.batch.zipSuccess.replace("{count}", allDownloads.length.toString()),
+        );
+      }
+      return;
+    }
     // 批次模式
     if (isBatchMode) {
       await processBatch();
@@ -194,7 +242,9 @@ export default function SmartResizer() {
               style={{ minHeight: "600px" }}
             >
               {/* Left: 圖片預覽 */}
-              {isBatchMode ? (
+              {editorMode === "app-icon" ? (
+                <AppIconPreview />
+              ) : isBatchMode ? (
                 <BatchPreview
                   files={batchFiles}
                   isProcessing={isProcessing}

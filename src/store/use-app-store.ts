@@ -5,7 +5,7 @@
  */
 
 import { create } from "zustand";
-import type { AppState } from "@/src/types";
+import type { AppState, AppIconPlatform } from "@/src/types";
 import {
   resizeImage,
   createPreviewURL,
@@ -14,6 +14,7 @@ import {
   checkCanvasPermission,
   loadWatermarkDataUrl,
 } from "@/src/lib/engine/processor";
+import { APP_ICON_PLATFORMS } from "@/src/lib/app-icon-presets";
 
 const useAppStore = create<AppState>((set, get) => ({
   // === 狀態 ===
@@ -63,6 +64,16 @@ const useAppStore = create<AppState>((set, get) => ({
 
   // Canvas 權限 Modal 狀態
   showCanvasPermissionModal: false,
+
+  // 編輯器模式
+  editorMode: "custom",
+
+  // App 圖示模式狀態
+  appIconState: {
+    selectedPlatforms: ["ios", "android", "web"] as AppIconPlatform[],
+    results: {},
+    isProcessing: false,
+  },
 
   // === Actions ===
 
@@ -954,6 +965,134 @@ const useAppStore = create<AppState>((set, get) => ({
    */
   setShowCanvasPermissionModal: (show: boolean) => {
     set({ showCanvasPermissionModal: show });
+  },
+
+  /**
+   * 切換編輯器模式（自訂尺寸 / App 圖示）
+   */
+  setEditorMode: (mode) => {
+    set({ editorMode: mode });
+  },
+
+  /**
+   * 切換 App 圖示平台的勾選狀態
+   */
+  toggleAppIconPlatform: (platform: AppIconPlatform) => {
+    const state = get();
+    const current = state.appIconState.selectedPlatforms;
+    const newPlatforms = current.includes(platform)
+      ? current.filter((p) => p !== platform)
+      : [...current, platform];
+
+    set({
+      appIconState: {
+        ...state.appIconState,
+        selectedPlatforms: newPlatforms,
+        // 切換平台時，清除已有結果
+        results: {},
+      },
+    });
+  },
+
+  /**
+   * 處理 App 圖示模式 - 批次產生所有勾選平台的所有尺寸
+   */
+  processAppIcons: async () => {
+    const state = get();
+    const { sourceFile, appIconState } = state;
+
+    if (!sourceFile) {
+      set({ error: "請先上傳圖片" });
+      return;
+    }
+
+    if (appIconState.selectedPlatforms.length === 0) {
+      set({ error: "請至少選擇一個平台" });
+      return;
+    }
+
+    // 檢查 Canvas 權限
+    if (!checkCanvasPermission()) {
+      set({ showCanvasPermissionModal: true });
+      return;
+    }
+
+    set({
+      appIconState: { ...appIconState, isProcessing: true, results: {} },
+      error: null,
+    });
+
+    try {
+      const results: Record<string, { blob: Blob; url: string }> = {};
+
+      // 遍歷所有勾選的平台
+      for (const platformId of appIconState.selectedPlatforms) {
+        const platformConfig = APP_ICON_PLATFORMS.find(
+          (p) => p.id === platformId,
+        );
+        if (!platformConfig) continue;
+
+        // 遍歷平台內所有尺寸
+        for (const sizeSpec of platformConfig.sizes) {
+          const key = `${platformId}-${sizeSpec.width}x${sizeSpec.height}-${sizeSpec.format}`;
+
+          try {
+            const blob = await resizeImage(sourceFile, {
+              width: sizeSpec.width,
+              height: sizeSpec.height,
+              format: sizeSpec.format,
+              quality: 1, // App Icon 最高品質
+              fitMode: "cover",
+            });
+
+            const url = createPreviewURL(blob);
+            results[key] = { blob, url };
+          } catch (err) {
+            console.error(
+              `處理 ${platformId} ${sizeSpec.label} 失敗:`,
+              err,
+            );
+          }
+        }
+      }
+
+      set({
+        appIconState: {
+          ...get().appIconState,
+          results,
+          isProcessing: false,
+        },
+      });
+    } catch (error) {
+      const isPermissionError =
+        error instanceof Error && error.message === "CANVAS_PERMISSION_DENIED";
+      set({
+        error: isPermissionError
+          ? null
+          : error instanceof Error
+            ? error.message
+            : "App Icon 處理時發生錯誤",
+        showCanvasPermissionModal: isPermissionError,
+        appIconState: { ...get().appIconState, isProcessing: false },
+      });
+    }
+  },
+
+  /**
+   * 重置 App 圖示結果
+   */
+  resetAppIconResults: () => {
+    const state = get();
+    // 清理所有產生的 URL
+    Object.values(state.appIconState.results).forEach((r) => {
+      revokePreviewURL(r.url);
+    });
+    set({
+      appIconState: {
+        ...state.appIconState,
+        results: {},
+      },
+    });
   },
 }));
 

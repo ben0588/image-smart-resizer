@@ -219,6 +219,12 @@ export interface AppState {
   // Canvas 權限 Modal 狀態
   showCanvasPermissionModal: boolean;
 
+  // 編輯器模式
+  editorMode: EditorMode;
+
+  // App 圖示模式狀態
+  appIconState: AppIconState;
+
   // Actions - 單檔案模式
   setSourceFile: (file: File) => void;
   updateConfig: (partial: Partial<ResizeConfig>) => void;
@@ -250,6 +256,12 @@ export interface AppState {
 
   // Actions - Canvas 權限 Modal
   setShowCanvasPermissionModal: (show: boolean) => void;
+
+  // Actions - 編輯器模式
+  setEditorMode: (mode: EditorMode) => void;
+  toggleAppIconPlatform: (platform: AppIconPlatform) => void;
+  processAppIcons: () => Promise<void>;
+  resetAppIconResults: () => void;
 }
 
 // ============ 元件 Props 型別 ============
@@ -281,6 +293,60 @@ export interface ImagePreviewProps {
   originalSrc: string; // 原始圖片 (用於裁切)
   originalDimensions: { width: number; height: number } | null;
   fileSize?: number;
+  isProcessing: boolean;
+}
+
+// ============ App Icon 圖示模式型別 ============
+
+/**
+ * 編輯器模式
+ * - custom: 自訂尺寸模式（預設）
+ * - app-icon: App 圖示模式
+ */
+export type EditorMode = "custom" | "app-icon";
+
+/**
+ * App 圖示平台類別 ID
+ */
+export type AppIconPlatform = "ios" | "android" | "web";
+
+/**
+ * App 圖示單一尺寸規格
+ */
+export interface AppIconSize {
+  label: string; // 用途名稱，如 "App Store 主圖標"（UI 顯示用）
+  filename: string; // 輸出檔名（含副檔名），遵循各平台命名規範
+  descKey: string; // 對應 locale 翻譯的 key（在 appIcon 區塊內）
+  width: number;
+  height: number;
+  format: "image/png" | "image/x-icon"; // 輸出格式（不包含 SVG）
+  description?: string; // 備註說明（當翻譯缺失時的 fallback）
+}
+
+/**
+ * App 圖示平台設定
+ */
+export interface AppIconPlatformConfig {
+  id: AppIconPlatform;
+  label: string; // 顯示名稱
+  description: string; // 簡短描述
+  folder: string; // 輸出資料夾名稱
+  sizes: AppIconSize[];
+}
+
+/**
+ * App 圖示模式的狀態
+ */
+export interface AppIconState {
+  selectedPlatforms: AppIconPlatform[]; // 目前勾選的平台
+  /** 各尺寸處理結果（key = `${platform}-${width}x${height}`） */
+  results: Record<
+    string,
+    {
+      blob: Blob;
+      url: string;
+    }
+  >;
   isProcessing: boolean;
 }
 
