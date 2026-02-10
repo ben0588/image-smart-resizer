@@ -232,7 +232,8 @@ export const webPlatform: AppIconPlatformConfig = {
       description: "瀏覽器分頁圖標（小）",
     },
     {
-      label: "Favicon ICO (48x48:符合 Google SEO 規範建議)",
+      // Google SEO 官方建議 48x48
+      label: "Favicon ICO",
       filename: "favicon.ico",
       descKey: "descWebFaviconIco",
       width: 48,
